@@ -1,9 +1,7 @@
 module Powerful
+using DocStringExtensions
 
-using LoopVectorization
-using SimpleTraits
-
-include("interfaces/traits.jl")
-include("interfaces/param.jl")
+include("essential/Essential.jl")
+include("models/Models.jl")
 
 end
