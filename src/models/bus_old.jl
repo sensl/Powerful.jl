@@ -42,6 +42,8 @@ function BusInput(buses::PowerFlowData.Buses33)
     )
 end
 
+
+
 """
 This is a struct for holding the internal data used for computation.
 """
@@ -89,8 +91,14 @@ struct BusVarsAttributes
     vm::VarAttributes{Algebraic}
 end
 
-struct DAE
+struct BusResiduals{Tf<:AbstractFloat}
+    va_rhs::Vector{Tf}
+    vm_rhs::Vector{Tf}
+end
 
+struct ResidualAttributes{Tr<:ResidualType}
+    private::Bool
+    type::Tr
 end
 
 
@@ -101,16 +109,6 @@ end
 
 function add_partial_residuals_to_dae!(dae::DAE, bus_residuals::BusResiduals)
 
-end
-
-struct BusResiduals{Tf<:AbstractFloat}
-    va_rhs::Vector{Tf}
-    vm_rhs::Vector{Tf}
-end
-
-struct ResidualAttributes{Tr<:ResidualType}
-    private::Bool
-    type::Tr
 end
 
 
@@ -156,6 +154,3 @@ function set_initial_guess(
     bus_vars.vm .= bus_input.vm[filter_online]
 
 end
-
- 
-
