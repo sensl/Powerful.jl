@@ -56,7 +56,9 @@ Model metadata containing variable requirements and layout strategy
 """
 abstract type ModelMetadata{T<:LayoutStrategy} end
 
-export AddressManager, LayoutStrategy, ContiguousVariables, ContiguousInstances, CustomAddressing, ModelAllocation, VarRequirement, ModelMetadata
+export AddressManager
+export LayoutStrategy, ContiguousVariables, ContiguousInstances, CustomAddressing
+export ModelAllocation, VarRequirement, ModelMetadata
 
 ### ============= End Address Manager ============= ###
 
@@ -76,6 +78,5 @@ struct SystemModel{T<:Tuple}
 end
 
 export SystemModel
-# export iterate
 
 ### ========================================= ###

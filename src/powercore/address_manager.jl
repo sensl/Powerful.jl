@@ -1,40 +1,7 @@
 """
-Generates a concrete ModelAddresses type for a given model
-"""
-function generate_addresses_type(model_type::Symbol, requirements::NTuple{N, VarRequirement}) where N
-    fields = [:($(Symbol("_" * String(req.name)))::Vector{UInt}) for req in requirements]
-    
-    # Generate the struct definition
-    @eval begin
-        Base.@kwdef struct $(Symbol(model_type, :Addresses)) <: ModelAddresses
-            $(fields...)
-        end
-    end
-end
-
-
-"""
-Check if model is fully allocated
-"""
-function is_model_allocated(am::AddressManager, model_name::Symbol)
-    haskey(am.allocations, model_name) && 
-        am.allocations[model_name].is_complete
-end
-
-
-"""
-Check if specific variable is allocated
-"""
-function is_var_allocated(am::AddressManager, model_name::Symbol, var::Symbol)
-    haskey(am.allocations, model_name) &&
-        haskey(am.allocations[model_name].var_allocations, var)
-end
-
-
-"""
 Get all allocated addresses for a model instance
 """
-function get_model_instance_addresses(
+function _get_model_addrs_dict(
     am::AddressManager,
     model_type::Symbol,
 )
@@ -46,9 +13,32 @@ function get_model_instance_addresses(
 end
 
 """
+$(SIGNATURES)
+
+Generate a concrete ModelAddresses struct for a given model type.
+
+# Arguments
+- `model_type::Symbol`: The type of model (e.g., :Bus, :Branch)
+- `requirements::NTuple{N, VarRequirement}`: Variable requirements for the model
+
+# Returns
+- A new struct type that inherits from ModelAddresses
+"""
+function make_addr_struct(model_type::Symbol, requirements::NTuple{N, VarRequirement}) where N
+    fields = [:($(Symbol("_" * String(req.name)))::Vector{UInt}) for req in requirements]
+    
+    # Generate the struct definition
+    @eval begin
+        Base.@kwdef struct $(Symbol(model_type, :Addresses)) <: ModelAddresses
+            $(fields...)
+        end
+    end
+end
+
+"""
 Create an address instance for a specific model instance
 """
-function create_address_instance(
+function make_addr_inst(
     am::AddressManager,
     model_type::Symbol,
 )
@@ -59,7 +49,7 @@ function create_address_instance(
     # Get the generated address type
     addr_type = getfield(@__MODULE__, Symbol(model_type, :Addresses))
 
-    var_allocations = get_model_instance_addresses(am, model_type).var_allocations
+    var_allocations = _get_model_addrs_dict(am, model_type).var_allocations
     indices = NamedTuple(Symbol("_", k) => v for (k, v) in var_allocations)
     # Create instance with pre-computed indices
     addr_type(; indices...)
@@ -74,9 +64,12 @@ function allocate_model!(
     metadata::M,
     instance_count::Int
 ) where {M<:ModelMetadata{ContiguousVariables}}
-    # Confirm model is not already allocated
+
+    # Input sanity checks
+    instance_count > 0 || throw(ArgumentError("instance_count must be positive"))
+    
     if haskey(am.allocations, model_type)
-        error("Model $model_type already has partial/complete allocation")
+        throw(ArgumentError("Model $model_type already has partial/complete allocation"))
     end
 
     var_allocations = Dict{Symbol, Vector{UInt}}()
@@ -107,9 +100,11 @@ function allocate_model!(
     instance_count::Int
 ) where {M<:ModelMetadata{ContiguousInstances}}
 
-    # Confirm model is not already allocated
+    # Input sanity checks
+    instance_count > 0 || throw(ArgumentError("instance_count must be positive"))
+    
     if haskey(am.allocations, model_type)
-        error("Model $model_type already has partial/complete allocation")
+        throw(ArgumentError("Model $model_type already has partial/complete allocation"))
     end
 
     vars_per_instance = length(metadata.internal_vars)
@@ -143,8 +138,25 @@ function allocate_model!(
     )
 end
 
+"""
+Check if model is fully allocated
+"""
+function is_model_allocated(am::AddressManager, model_name::Symbol)
+    haskey(am.allocations, model_name) && 
+        am.allocations[model_name].is_complete
+end
+
+
+"""
+Check if specific variable is allocated
+"""
+function is_var_allocated(am::AddressManager, model_name::Symbol, var::Symbol)
+    haskey(am.allocations, model_name) &&
+        haskey(am.allocations[model_name].var_allocations, var)
+end
+
 export allocate_model!
-export generate_addresses_type, create_address_instance
+export make_addr_struct, make_addr_inst
 
 
 @testitem "Address Manager" begin
@@ -161,9 +173,8 @@ export generate_addresses_type, create_address_instance
     @test is_var_allocated(am, :Bus, :theta)
     @test is_var_allocated(am, :Bus, :v)
 
-    generate_addresses_type(:Bus, BusMetadata{ContiguousVariables}().internal_vars)
-    addr = create_address_instance(am, :Bus)
-    @show addr._theta
+    make_addr_struct(:Bus, BusMetadata{ContiguousVariables}().internal_vars)
+    addr = make_addr_inst(am, :Bus)
     @test all(addr._theta .== collect(UInt, 1:5))
     @test all(addr._v .== collect(UInt, 6:10))
 
@@ -171,10 +182,18 @@ export generate_addresses_type, create_address_instance
     am = AddressManager()
     allocate_model!(am, :Bus, BusMetadata{ContiguousInstances}(), 5);
 
-    generate_addresses_type(:Bus, BusMetadata{ContiguousInstances}().internal_vars)
-    addr = create_address_instance(am, :Bus)
-    @show addr._theta
+    make_addr_struct(:Bus, BusMetadata{ContiguousInstances}().internal_vars)
+    addr = make_addr_inst(am, :Bus)
     @test all(addr._theta .== [1, 3, 5, 7, 9])
     @test all(addr._v .== [2, 4, 6, 8, 10])
 
+    # Add more edge cases
+    am = AddressManager()
+    @test_throws ArgumentError allocate_model!(am, :Bus, BusMetadata{ContiguousVariables}(), 0)
+    
+    # Test reallocation attempts
+    am = AddressManager()
+    allocate_model!(am, :Bus, BusMetadata{ContiguousVariables}(), 5)
+    @test_throws ArgumentError allocate_model!(am, :Bus, BusMetadata{ContiguousVariables}(), 3)
+    
 end
