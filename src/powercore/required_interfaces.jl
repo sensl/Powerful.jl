@@ -3,6 +3,7 @@ $(SIGNATURES)
 
 Required interface that all models must implement
 """
+## TODO: consider renaming to get_var_specs or something more descriptive
 function get_var_requirements(::Type{<:AbstractModel})
     throw(error("get_var_requirements must be implemented for concrete model types"))
 end

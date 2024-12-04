@@ -5,7 +5,7 @@ Helper functions to work with components
 """
 function component_types(sys::SystemModel)
     # Get the concrete type of each component
-    map(typeof, sys.components)
+    map(typeof, sys.models)
 end
 
 # Helper type with explicit tuple type
@@ -14,7 +14,7 @@ struct ComponentIterator{T<:Tuple, S<:SystemModel{T}}
     n::Int  # Current iteration number
 end
 
-Base.length(sys::SystemModel) = length(sys.components)
+Base.length(sys::SystemModel) = length(sys.models)
 
 # Type-stable iteration
 function Base.iterate(iter::ComponentIterator{T, S}) where {T, S}

@@ -19,17 +19,23 @@ Generate a concrete ModelAddresses struct for a given model type.
 
 # Arguments
 - `model_type::Symbol`: The type of model (e.g., :Bus, :Branch)
-- `requirements::NTuple{N, VarRequirement}`: Variable requirements for the model
+- `variables::NTuple{N, VarSpec}`: Variables required by the model
 
 # Returns
 - A new struct type that inherits from ModelAddresses
 """
-function make_addr_struct(model_type::Symbol, requirements::NTuple{N, VarRequirement}) where N
-    fields = [:($(Symbol("_" * String(req.name)))::Vector{UInt}) for req in requirements]
+function make_addr_struct(model_type::Symbol, variables::NTuple{N, VarSpec}) where N
+    # Check if struct already exists
+    struct_name = Symbol(model_type, :Addresses)
+    if isdefined(@__MODULE__, struct_name)
+        return
+    end
+
+    fields = [:($(Symbol("_" * String(req.name)))::Vector{UInt}) for req in variables]
     
     # Generate the struct definition
     @eval begin
-        Base.@kwdef struct $(Symbol(model_type, :Addresses)) <: ModelAddresses
+        Base.@kwdef struct $(struct_name) <: ModelAddresses
             $(fields...)
         end
     end

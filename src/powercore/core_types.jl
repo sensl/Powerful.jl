@@ -46,7 +46,7 @@ struct CustomAddressing <: LayoutStrategy end
 """
 Simplified variable requirement
 """
-struct VarRequirement
+struct VarSpec
     name::Symbol
     var_type::VarType
 end
@@ -58,7 +58,7 @@ abstract type ModelMetadata{T<:LayoutStrategy} end
 
 export AddressManager
 export LayoutStrategy, ContiguousVariables, ContiguousInstances, CustomAddressing
-export ModelAllocation, VarRequirement, ModelMetadata
+export ModelAllocation, VarSpec, ModelMetadata
 
 ### ============= End Address Manager ============= ###
 
@@ -66,7 +66,7 @@ export ModelAllocation, VarRequirement, ModelMetadata
 
 struct SystemModel{T<:Tuple}
     address_manager::AddressManager
-    components::T
+    models::T
 
     # Inner constructor to validate component types
     function SystemModel(am::AddressManager, components::Tuple)

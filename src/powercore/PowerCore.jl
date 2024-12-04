@@ -12,7 +12,7 @@ include("core_types.jl")
 
 export AbstractModel
 export VarType, Algebraic, State
-export VarRequirement, ModelMetadata
+export VarSpec, ModelMetadata
 export ContiguousVariables, ContiguousInstances, LayoutStrategy
 
 include("required_interfaces.jl")

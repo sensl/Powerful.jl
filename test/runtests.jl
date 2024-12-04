@@ -1,6 +1,5 @@
 using Powerful
 using Test
+using TestItemRunner
 
-@testset "Powerful.jl" begin
-    include("test_bus.jl")
-end
+@run_package_tests
