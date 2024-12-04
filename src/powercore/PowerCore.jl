@@ -4,6 +4,7 @@ Core interface definition for all models
 
 module PowerCore
 using DocStringExtensions
+using TestItems
 
 include("core_types.jl")
 

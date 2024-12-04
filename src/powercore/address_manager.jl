@@ -4,10 +4,9 @@ Generates a concrete ModelAddresses type for a given model
 function generate_addresses_type(model_type::Symbol, requirements::NTuple{N, VarRequirement}) where N
     fields = [:($(Symbol("_" * String(req.name)))::Vector{UInt}) for req in requirements]
     
-    @show fields
     # Generate the struct definition
     @eval begin
-        struct $(Symbol(model_type, :Addresses)) <: ModelAddresses
+        Base.@kwdef struct $(Symbol(model_type, :Addresses)) <: ModelAddresses
             $(fields...)
         end
     end
@@ -63,7 +62,7 @@ function create_address_instance(
     var_allocations = get_model_instance_addresses(am, model_type).var_allocations
     indices = NamedTuple(Symbol("_", k) => v for (k, v) in var_allocations)
     # Create instance with pre-computed indices
-    addr_type(indices...)
+    addr_type(; indices...)
 end
 
 """
@@ -142,4 +141,40 @@ function allocate_model!(
         var_allocations,
         true  # complete allocation
     )
+end
+
+export allocate_model!
+export generate_addresses_type, create_address_instance
+
+
+@testitem "Address Manager" begin
+    using Powerful.Models
+    using Powerful.PowerCore
+    using Powerful.PowerCore: is_model_allocated, is_var_allocated
+
+    ### === Test ContiguousVariables layout === ###
+    am = AddressManager()
+    allocate_model!(am, :Bus, BusMetadata{ContiguousVariables}(), 5);
+
+    @test am.allocations[:Bus].is_complete
+    @test is_model_allocated(am, :Bus)
+    @test is_var_allocated(am, :Bus, :theta)
+    @test is_var_allocated(am, :Bus, :v)
+
+    generate_addresses_type(:Bus, BusMetadata{ContiguousVariables}().internal_vars)
+    addr = create_address_instance(am, :Bus)
+    @show addr._theta
+    @test all(addr._theta .== collect(UInt, 1:5))
+    @test all(addr._v .== collect(UInt, 6:10))
+
+    ### === Test ContiguousInstances layout === ###
+    am = AddressManager()
+    allocate_model!(am, :Bus, BusMetadata{ContiguousInstances}(), 5);
+
+    generate_addresses_type(:Bus, BusMetadata{ContiguousInstances}().internal_vars)
+    addr = create_address_instance(am, :Bus)
+    @show addr._theta
+    @test all(addr._theta .== [1, 3, 5, 7, 9])
+    @test all(addr._v .== [2, 4, 6, 8, 10])
+
 end
