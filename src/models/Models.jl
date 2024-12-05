@@ -2,11 +2,13 @@ module Models
 using DocStringExtensions
 using PowerFlowData
 using InlineStrings
+using TestItems
+using StructArrays
 
+include("soa_interface.jl")
 include("bus.jl")
 
 
 export BusInput, BusVars, BusInternal, BusAddress
-export get_online_count, get_online_status
 
 end # module

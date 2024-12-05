@@ -11,12 +11,12 @@ macro vectorize_model(def)
     
     # Generate the vectorized structs
     vec_struct = _make_vector_struct_expr(struct_info, :full, "Vec")
-    vec_pu_struct = _make_vector_struct_expr(struct_info, :numerical, "VecPu")
+    numerical_struct = _make_vector_struct_expr(struct_info, :numerical, "Numerical", false)
     
     return esc(quote 
         Base.@kwdef $def
         Base.@kwdef $vec_struct
-        Base.@kwdef $vec_pu_struct
+        Base.@kwdef $numerical_struct
     end)
 end
 
@@ -83,7 +83,8 @@ Parametric types that cannot be determined at compile time are retained.
 TODO: This function may be an overkill if the per-unit struct retains all the
 fields. In that case, this function could be simplified.
 """
-function _make_vector_struct_expr(info, kind::Symbol, suffix::String)
+function _make_vector_struct_expr(info, kind::Symbol, suffix::String, vectorize::Bool=true,
+    supertype::DataType=AbstractModel)
     @assert kind in (:full, :numerical)
     
     struct_name = Symbol(info.name, suffix)
@@ -105,8 +106,9 @@ function _make_vector_struct_expr(info, kind::Symbol, suffix::String)
                 return nothing
             end
         end
-        
-        :($(field_name)::Vector{$(field_type)})
+
+        final_type = vectorize ? :(Vector{$field_type}) : field_type
+        :($(field_name)::$final_type)
     end
     
     fields = filter(!isnothing, fields)
@@ -125,6 +127,5 @@ function _make_vector_struct_expr(info, kind::Symbol, suffix::String)
     
     Expr(:struct, info.is_mutable, type_expr, Expr(:block, fields...))
 end
-
 
 export @vectorize_model

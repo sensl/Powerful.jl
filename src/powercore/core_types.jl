@@ -4,6 +4,23 @@ abstract type AbstractModel end
 abstract type VarType end
 struct Algebraic <: VarType end
 struct State <: VarType end
+struct Observed <: VarType end
+
+abstract type VarOwnership end
+struct OwnVar <: VarOwnership end
+struct ForeignVar{Ti<:Integer, T<:AbstractVector{Ti}} <: VarOwnership
+    model_name::Symbol
+    var_name::Symbol
+    indexer::T
+end
+
+abstract type ResidualType end
+struct PartialResidual <: ResidualType end
+struct FullResidual <: ResidualType end
+
+export VarType, Algebraic, State, Observed
+export VarOwnership, OwnVar, ForeignVar
+export ResidualType, PartialResidual, FullResidual
 ### ============================= ###
 
 ### ========== Address Manager ========== ###
@@ -49,6 +66,7 @@ Simplified variable requirement
 struct VarSpec
     name::Symbol
     var_type::VarType
+    var_boundary::VarOwnership
 end
 
 """

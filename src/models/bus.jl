@@ -17,23 +17,22 @@ import Powerful.PowerCore: supports_format, from_raw
     evlo::Tv
 end
 
-export Bus, BusVec, BusVecPu
+export Bus, BusVec, BusNumerical
 
 const BUS_VAR_SPECS = (
-    VarSpec(:theta, Algebraic()),
-    VarSpec(:v, Algebraic()),
+    VarSpec(:theta, Algebraic(), OwnVar()),
+    VarSpec(:v, Algebraic(), OwnVar()),
 )
 
 const BUS_OUTPUT_VARS = (:theta, :v)
 
-struct BusMetadata{T<:LayoutStrategy} <: ModelMetadata{T}
-    internal_vars::NTuple{2, VarSpec}
-    # no external vars
-    output_vars::NTuple{2, Symbol}
+struct BusMetadata{T, Nv, No} <: ModelMetadata{T}
+    var_specs::NTuple{Nv, VarSpec}
+    output_vars::NTuple{No, Symbol}
 end
 
 function BusMetadata{T}() where T <: LayoutStrategy
-    return BusMetadata{T}(BUS_VAR_SPECS, BUS_OUTPUT_VARS)
+    return BusMetadata{T, length(BUS_VAR_SPECS), length(BUS_OUTPUT_VARS)}(BUS_VAR_SPECS, BUS_OUTPUT_VARS)
 end
 
 ### === Format Support === ###
@@ -62,3 +61,18 @@ end
 
 ### === Export Section === ###
 export Bus, BusMetadata
+
+@testitem "Bus" begin
+    using PowerFlowData
+    using Powerful
+    using Powerful.Models
+    using Powerful.PowerCore
+    using StructArrays
+
+    case = PowerFlowData.parse_network(joinpath(@__DIR__, "..", "..", "cases", "ieee14.raw"))
+    bus = load_model(Bus, case)
+    @test bus isa BusVec
+
+    struct_array = to_struct_array(bus)
+    @test struct_array isa StructArray
+end

@@ -6,12 +6,12 @@ module PowerCore
 using DocStringExtensions
 using TestItems
 using Logging
+using StructArrays
 
 include("core_types.jl")
 
 
-export AbstractModel
-export VarType, Algebraic, State
+export AbstractModel, AbstractModelVec, AbstractModelNumerical
 export VarSpec, ModelMetadata
 export ContiguousVariables, ContiguousInstances, LayoutStrategy
 
