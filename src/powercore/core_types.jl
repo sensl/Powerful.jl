@@ -80,3 +80,14 @@ end
 export SystemModel
 
 ### ========================================= ###
+
+
+### ============= Data Format Types ============= ###
+
+abstract type DataFormat end
+struct PSSE <: DataFormat end
+struct MATPOWER <: DataFormat end
+
+export DataFormat, PSSE
+
+### ========================================= ###

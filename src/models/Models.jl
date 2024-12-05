@@ -1,7 +1,7 @@
 module Models
 using DocStringExtensions
 using PowerFlowData
-using EnumX
+using InlineStrings
 
 include("bus.jl")
 
