@@ -12,11 +12,10 @@ include("core_types.jl")
 
 
 export AbstractModel, AbstractModelVec, AbstractModelNumerical
-export VarSpec, ModelMetadata
+export ModelMetadata
 export ContiguousVariables, ContiguousInstances, LayoutStrategy
 
 include("address_manager.jl")
-export AddressManager
 export allocate_model!, get_var_addresses
 
 include("system.jl")
@@ -24,5 +23,7 @@ include("system.jl")
 include("vectorizer.jl")
 
 include("format_traits.jl")
+
+include("model_var.jl")
 
 end # module

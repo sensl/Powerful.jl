@@ -1,11 +1,6 @@
 abstract type AbstractModel end
 
 ### ============================= ###
-abstract type VarType end
-struct Algebraic <: VarType end
-struct State <: VarType end
-struct Observed <: VarType end
-
 abstract type VarOwnership end
 struct OwnVar <: VarOwnership end
 struct ForeignVar{Ti<:Integer, T<:AbstractVector{Ti}} <: VarOwnership
@@ -14,13 +9,62 @@ struct ForeignVar{Ti<:Integer, T<:AbstractVector{Ti}} <: VarOwnership
     indexer::T
 end
 
+# === Variable Traits === #
+abstract type VarProperty end
+
+struct Description <: VarProperty
+    value::String
+end
+
+struct Units <: VarProperty
+    value::String
+end
+
+struct Bounds <: VarProperty
+    min::Float64
+    max::Float64
+end
+
+# Type-safe property collection
+const PropertyDict = Dict{Type{<:VarProperty}, VarProperty}
+
+abstract type VarTrait end
+struct Internal <: VarTrait end
+struct External <: VarTrait end
+
+abstract type VarType end
+struct Algeb <: VarType end
+struct State <: VarType end
+struct Observed <: VarType end
+
+"""
+    ModelVar{T<:VarTrait, VT, SM, Props} represents a variable in a power system model
+
+Type parameters:
+- T: Variable trait (Internal/External)
+- VT: Variable type (e.g., Algeb, State) or Nothing
+- SM: Source model type or Nothing
+- Props: Type of properties dictionary
+"""
+struct ModelVar{T<:VarTrait, VT<:Union{VarType, Nothing}, SM<:Union{Type, Nothing}, Props<:PropertyDict}
+    name::Symbol
+    var_type::VT
+    source_model::SM
+    source_var::Union{Symbol, Nothing}
+    properties::Props
+end
+
+
 abstract type ResidualType end
 struct PartialResidual <: ResidualType end
 struct FullResidual <: ResidualType end
 
-export VarType, Algebraic, State, Observed
+export VarType, Algeb, State, Observed
+export VarTrait, Internal, External
 export VarOwnership, OwnVar, ForeignVar
 export ResidualType, PartialResidual, FullResidual
+export VarProperty, Description, Units, Bounds, PropertyDict
+export ModelVar
 ### ============================= ###
 
 ### ========== Address Manager ========== ###
@@ -61,22 +105,20 @@ struct ContiguousInstances <: LayoutStrategy end
 struct CustomAddressing <: LayoutStrategy end
 
 """
-Simplified variable requirement
-"""
-struct VarSpec
-    name::Symbol
-    var_type::VarType
-    var_boundary::VarOwnership
-end
+    ModelMetadata
 
 """
-Model metadata containing variable requirements and layout strategy
-"""
-abstract type ModelMetadata{T<:LayoutStrategy} end
+Base.@kwdef struct ModelMetadata
+    name::Symbol
+    vars::Vector{ModelVar}
+    output_vars::Vector{Symbol}
+    layout::LayoutStrategy = ContiguousVariables()
+end
+
 
 export AddressManager
 export LayoutStrategy, ContiguousVariables, ContiguousInstances, CustomAddressing
-export ModelAllocation, VarSpec, ModelMetadata
+export ModelAllocation, ModelMetadata
 
 ### ============= End Address Manager ============= ###
 

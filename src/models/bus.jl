@@ -19,20 +19,31 @@ end
 
 export Bus, BusVec, BusNumerical
 
-const BUS_VAR_SPECS = (
-    VarSpec(:theta, Algebraic(), OwnVar()),
-    VarSpec(:v, Algebraic(), OwnVar()),
-)
+const BUS_VARS = [
+    ModelVar(:theta, Algeb(),
+        description="Bus voltage angle",
+        units="rad",
+        bounds=(-Inf, Inf)
+    ),
+    ModelVar(:v, Algeb(),
+        description="Bus voltage magnitude",
+        units="pu",
+        bounds=(0.0, 2.0)
+    )
+]
 
-const BUS_OUTPUT_VARS = (:theta, :v)
+const BUS_OUTPUT_VARS = [:theta, :v]
 
-struct BusMetadata{T, Nv, No} <: ModelMetadata{T}
-    var_specs::NTuple{Nv, VarSpec}
-    output_vars::NTuple{No, Symbol}
-end
-
-function BusMetadata{T}() where T <: LayoutStrategy
-    return BusMetadata{T, length(BUS_VAR_SPECS), length(BUS_OUTPUT_VARS)}(BUS_VAR_SPECS, BUS_OUTPUT_VARS)
+"""
+Get metadata for a model type Bus
+"""
+function model_metadata(::Type{Bus}; layout::LayoutStrategy=ContiguousVariables())
+    ModelMetadata(
+        name = :Bus,
+        vars = BUS_VARS,
+        output_vars = BUS_OUTPUT_VARS,
+        layout = layout
+    )
 end
 
 ### === Format Support === ###
@@ -58,9 +69,6 @@ function from_raw(::Type{Bus}, raw, ::FormatSupport{PSSE})
     )
 end
 
-
-### === Export Section === ###
-export Bus, BusMetadata
 
 @testitem "Bus" begin
     using PowerFlowData
