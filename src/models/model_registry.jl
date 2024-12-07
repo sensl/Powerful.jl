@@ -1,3 +1,8 @@
+export @register_model
+export MODEL_REGISTRY
+export get_registered_models, get_model_type
+
+
 """
 Central registry for model types and their metadata
 """
@@ -39,11 +44,6 @@ function get_model_type(registry::ModelRegistry{T}, name::Symbol) where T
     end
     error("Model $name not found in registry")
 end
-
-export @register_model
-export MODEL_REGISTRY
-export get_registered_models, get_model_type
-
 
 @testitem "ModelRegistry" begin
     using Powerful.PowerCore

@@ -1,3 +1,5 @@
+export Bus1Ph, Bus1PhVec, Bus1PhNumerical
+
 @vectorize_model mutable struct Bus1Ph{Tv} <: AbstractBus{Tv}
     i::Int32
     name::String15
@@ -13,8 +15,6 @@
     evhi::Tv
     evlo::Tv
 end
-
-export Bus1Ph, Bus1PhVec, Bus1PhNumerical
 
 const BUS1PH_VARS = [
     ModelVar(:theta, Algeb(),
@@ -77,7 +77,10 @@ end
     using Powerful.PowerCore
     using StructArrays
 
-    case = PowerFlowData.parse_network(joinpath(@__DIR__, "..", "..", "..", "cases", "ieee14.raw"))
+    case = PowerFlowData.parse_network(
+        joinpath(@__DIR__, "..", "..", "..", "cases", "ieee14.raw")
+    )
+
     bus1ph = from_raw(Bus1Ph, case)
     @test bus1ph isa Bus1PhVec
 

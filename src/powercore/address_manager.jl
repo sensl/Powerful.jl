@@ -1,3 +1,6 @@
+export allocate_model!
+export make_addr_struct, make_addr_inst
+
 """
 Get all allocated addresses for a model instance
 """
@@ -192,8 +195,6 @@ function is_var_allocated(am::AddressManager, model_name::Symbol, var::Symbol)
         haskey(am.allocations[model_name].var_allocations, var)
 end
 
-export allocate_model!
-export make_addr_struct, make_addr_inst
 
 
 @testitem "Address Manager" begin

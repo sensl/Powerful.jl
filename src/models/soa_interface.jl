@@ -1,3 +1,5 @@
+export to_struct_array
+
 """
 Extract numerical fields from a vector model into a StructArray
 """
@@ -20,5 +22,3 @@ function to_struct_array(vec_data::T) where T
     return StructArray{eval(numerical_type)}(nums)
 end
 
-
-export to_struct_array

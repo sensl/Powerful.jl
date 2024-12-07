@@ -14,6 +14,4 @@ include("model_registry.jl")
 include("bus/bus.jl")
 
 
-export model_metadata
-
 end # module

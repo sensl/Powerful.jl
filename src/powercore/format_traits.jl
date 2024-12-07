@@ -1,3 +1,6 @@
+export FormatSupport
+export supports_format, from_raw, is_format_supported, validate_raw
+
 """
 Trait system for data format conversions
 """
@@ -52,6 +55,3 @@ function validate_raw(::Type{M}, data, format::Type{F}) where {M,F}
     end
     # TODO: Additional validation logic...
 end
-
-export FormatSupport
-export supports_format, from_raw, is_format_supported, validate_raw

@@ -1,3 +1,5 @@
+export @vectorize_model
+
 """
 Macro to vectorize a model struct.
 
@@ -128,4 +130,3 @@ function _make_vector_struct_expr(info, kind::Symbol, suffix::String, vectorize:
     Expr(:struct, info.is_mutable, type_expr, Expr(:block, fields...))
 end
 
-export @vectorize_model

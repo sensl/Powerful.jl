@@ -1,3 +1,6 @@
+
+export model_metadata
+
 """
     model_metadata(::Type{M}; layout::LayoutStrategy=ContiguousVariables()) where {M<:AbstractModel}
 
