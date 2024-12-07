@@ -1,5 +1,5 @@
 export FormatSupport
-export supports_format, from_raw, is_format_supported, validate_raw
+export supports_format, parse_model, is_format_supported, validate_raw
 
 """
 Trait system for data format conversions
@@ -18,27 +18,27 @@ Default implementation returns NoFormatSupport.
 supports_format(::Type, ::Type) = NoFormatSupport()
 
 """
-    from_raw(::Type{M}, data, trait)
+    parse_model(::Type{M}, data, trait)
 
 Convert raw data to model instance based on trait dispatch.
 Must be implemented for specific model types and formats.
 """
-function from_raw end
+function parse_model end
 
 # Default fallback with informative error
-function from_raw(::Type{M}, data, ::NoFormatSupport) where M
+function parse_model(::Type{M}, data, ::NoFormatSupport) where M
     throw(ArgumentError(
         "No conversion implemented for model type $M. " *
-        "Please implement `supports_format` and `from_raw` for this type."
+        "Please implement `supports_format` and `parse_model` for this type."
     ))
 end
 
 """
 Load components for any model type that supports the format
 """
-function from_raw(::Type{M}, raw_data, ::Type{F}=PSSE) where {M,F}
+function parse_model(::Type{M}, raw_data, ::Type{F}=PSSE) where {M,F}
     trait = supports_format(M, F)
-    return from_raw(M, raw_data, trait)
+    return parse_model(M, raw_data, trait)
 end
 
 """

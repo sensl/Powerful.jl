@@ -50,7 +50,7 @@ end
 
 supports_format(::Type{Bus1Ph}, ::Type{PSSE}) = FormatSupport{PSSE}()
 
-function from_raw(::Type{Bus1Ph}, raw, ::FormatSupport{PSSE})
+function parse_model(::Type{Bus1Ph}, raw, ::FormatSupport{PSSE})
     buses = raw.buses
     return Bus1PhVec(
         i = buses.i,
@@ -81,7 +81,7 @@ end
         joinpath(@__DIR__, "..", "..", "..", "cases", "ieee14.raw")
     )
 
-    bus1ph = from_raw(Bus1Ph, case)
+    bus1ph = parse_model(Bus1Ph, case)
     @test bus1ph isa Bus1PhVec
 
     struct_array = to_struct_array(bus1ph)
