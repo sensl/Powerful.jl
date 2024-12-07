@@ -31,6 +31,14 @@ function from_raw(::Type{M}, data, ::NoFormatSupport) where M
 end
 
 """
+Load components for any model type that supports the format
+"""
+function from_raw(::Type{M}, raw_data, ::Type{F}=PSSE) where {M,F}
+    trait = supports_format(M, F)
+    return from_raw(M, raw_data, trait)
+end
+
+"""
 Check if a model type supports conversion from a format
 """
 is_format_supported(::Type{M}, ::Type{F}) where {M,F} = !(supports_format(M, F) isa NoFormatSupport)

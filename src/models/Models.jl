@@ -11,7 +11,7 @@ include("soa_interface.jl")
 include("model_traits.jl")
 include("model_registry.jl")
 
-include("bus.jl")
+include("bus/bus.jl")
 
 
 export model_metadata

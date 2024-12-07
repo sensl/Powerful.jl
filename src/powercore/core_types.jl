@@ -124,6 +124,11 @@ Base.@kwdef struct ModelMetadata
     layout::LayoutStrategy = ContiguousVariables()
 end
 
+abstract type NodeTrait end
+struct ACNode <: NodeTrait end
+struct DCNode <: NodeTrait end
+
+
 
 
 
@@ -136,6 +141,7 @@ export ModelMetadata
 struct SystemModel{T<:Tuple}
     address_manager::AddressManager
     models::T
+    # TODO: Boundary buses/dc nodes?
 
     # Inner constructor to validate component types
     function SystemModel(am::AddressManager, components::Tuple)
