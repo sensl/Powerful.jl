@@ -4,9 +4,8 @@
 *.jl.mem
 .DS_Store
 .vscode
-/docs/build/
-Manifest.toml
 docs/build/
+Manifest.toml
 tmp/
 .history/
 **/.ipynb_checkpoints
