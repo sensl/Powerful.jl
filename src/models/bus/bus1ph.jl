@@ -44,7 +44,7 @@ function model_metadata(::Type{Bus1Ph}; layout::LayoutStrategy=ContiguousVariabl
     )
 end
 
-@register_model Bus
+@register_model Bus1Ph
 
 ### === Format Support === ###
 
@@ -77,7 +77,7 @@ end
     using Powerful.PowerCore
     using StructArrays
 
-    case = PowerFlowData.parse_network(joinpath(@__DIR__, "..", "..", "cases", "ieee14.raw"))
+    case = PowerFlowData.parse_network(joinpath(@__DIR__, "..", "..", "..", "cases", "ieee14.raw"))
     bus1ph = from_raw(Bus1Ph, case)
     @test bus1ph isa Bus1PhVec
 

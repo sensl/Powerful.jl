@@ -50,8 +50,8 @@ export get_registered_models, get_model_type
     using Powerful.Models
 
     @testset "get_registered_models" begin
-        @test Bus in get_registered_models(MODEL_REGISTRY[])
-        @test get_model_type(MODEL_REGISTRY[], :Bus) == Bus
+        @test Bus1Ph in get_registered_models(MODEL_REGISTRY[])
+        @test get_model_type(MODEL_REGISTRY[], :Bus1Ph) == Bus1Ph
 
         struct TestModel <: AbstractModel end
         @register_model TestModel
