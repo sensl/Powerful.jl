@@ -104,6 +104,15 @@ struct ContiguousVariables <: LayoutStrategy end
 struct ContiguousInstances <: LayoutStrategy end
 struct CustomAddressing <: LayoutStrategy end
 
+
+export AddressManager
+export LayoutStrategy, ContiguousVariables, ContiguousInstances, CustomAddressing
+export ModelAllocation
+
+### ============= End Address Manager ============= ###
+
+### ============= Model Metadata and Traits ============= ###
+
 """
     ModelMetadata
 
@@ -116,11 +125,11 @@ Base.@kwdef struct ModelMetadata
 end
 
 
-export AddressManager
-export LayoutStrategy, ContiguousVariables, ContiguousInstances, CustomAddressing
-export ModelAllocation, ModelMetadata
 
-### ============= End Address Manager ============= ###
+
+export ModelMetadata
+
+### ============= End Model Metadata and Traits ============= ###
 
 ### ============= System Types ============= ###
 

@@ -46,6 +46,8 @@ function model_metadata(::Type{Bus}; layout::LayoutStrategy=ContiguousVariables(
     )
 end
 
+@register_model Bus
+
 ### === Format Support === ###
 
 supports_format(::Type{Bus}, ::Type{PSSE}) = FormatSupport{PSSE}()

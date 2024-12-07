@@ -9,9 +9,10 @@ using Powerful.PowerCore
 
 include("soa_interface.jl")
 include("model_traits.jl")
+include("model_registry.jl")
+
 include("bus.jl")
 
-include("model_registry.jl")
 
 export model_metadata
 
