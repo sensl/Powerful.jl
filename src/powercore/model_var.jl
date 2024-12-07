@@ -34,20 +34,21 @@ Constructor for external variables
 """
 function ModelVar(
     name::Symbol,
-    source_model::Type,
+    var_type::VT,
+    source_model::T,
     source_var::Symbol;
     description::String = "",
     units::String = ""
-)
+) where {T<:Type{<:AbstractModel}, VT<:VarType}
     props = PropertyDict()
     
     # Add properties if provided
     !isempty(description) && (props[Description] = Description(description))
     !isempty(units) && (props[Units] = Units(units))
     
-    ModelVar{External, Nothing, typeof(source_model), PropertyDict}(
+    ModelVar{External, VT, T, PropertyDict}(
         name,
-        nothing,
+        var_type,
         source_model,
         source_var,
         props

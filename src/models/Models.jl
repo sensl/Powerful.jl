@@ -12,6 +12,7 @@ include("model_traits.jl")
 include("model_registry.jl")
 
 include("bus/bus.jl")
+include("pq.jl")
 
 
 end # module
