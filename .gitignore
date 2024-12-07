@@ -9,3 +9,4 @@ Manifest.toml
 docs/build/
 tmp/
 .history/
+**/.ipynb_checkpoints
