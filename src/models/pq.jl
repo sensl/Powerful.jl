@@ -1,6 +1,8 @@
 using Powerful.PowerCore
 import Powerful.PowerCore: supports_format, parse_model
 
+export PQ, PQVec, PQNumerical
+
 abstract type AbstractLoad{Tv} <: AbstractModel end
 
 @vectorize_model mutable struct PQ{Tv} <: AbstractLoad{Tv}
@@ -40,7 +42,7 @@ const PQ_VARS = [
 
 ]
 
-const PQ_OUTPUT_VARS = [:p, :q]
+const PQ_OUTPUT_VARS = []
 
 """
 Get metadata for PQ load model
@@ -52,4 +54,50 @@ function model_metadata(::Type{PQ}; layout::LayoutStrategy=ContiguousVariables()
         output_vars = PQ_OUTPUT_VARS,
         layout = layout
     )
+end
+
+### === Model Format Adapters ===
+
+supports_format(::Type{PQ}, ::Type{PSSE}) = FormatSupport{PSSE}()
+
+function parse_model(model::Type{PQ}, raw, ::FormatSupport{PSSE})
+    loads = raw.loads
+    mod = parentmodule(model)
+    vec_type = getfield(mod, Symbol(nameof(model), "Vec"))
+
+    return vec_type(
+        i = loads.i,
+        id = loads.id,
+        status = loads.status,
+        area = loads.area,
+        zone = loads.zone,
+        pl = loads.pl,
+        ql = loads.ql,
+        ip = loads.ip,
+        iq = loads.iq,
+        yp = loads.yp,
+        yq = loads.yq,
+        owner = loads.owner,
+        scale = loads.scale,
+        intrpt = loads.intrpt,
+    )
+end
+
+@register_model PQ
+
+
+### === Begin Tests === ###
+
+@testitem "PQ" begin
+    using PowerFlowData
+    using Powerful
+    using Powerful.Models
+    using Powerful.PowerCore
+
+    case = PowerFlowData.parse_network(
+        joinpath(pkgdir(Powerful), "cases", "ieee14.raw")
+    )
+
+    pq = parse_model(PQ, case)
+    @test pq isa PQVec
 end
