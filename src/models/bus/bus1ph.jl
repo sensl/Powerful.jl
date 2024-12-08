@@ -1,6 +1,6 @@
-export Bus1Ph, Bus1PhVec, Bus1PhNumerical
+export Bus, BusVec, BusNumerical
 
-@vectorize_model mutable struct Bus1Ph{Tv} <: AbstractBus{Tv}
+@vectorize_model mutable struct Bus{Tv} <: AbstractBus{Tv}
     i::Int32
     name::String15
     basekv::Tv
@@ -16,7 +16,7 @@ export Bus1Ph, Bus1PhVec, Bus1PhNumerical
     evlo::Tv
 end
 
-@register_model Bus1Ph
+@register_model Bus
 
 const BUS1PH_VARS = [
     ModelVar(:theta, Algeb(),
@@ -35,11 +35,11 @@ const BUS1PH_VARS = [
 const BUS1PH_OUTPUT_VARS = [:theta, :v]
 
 """
-Get metadata for a model type Bus1Ph
+Get metadata for a model type Bus
 """
-function model_metadata(::Type{Bus1Ph}; layout::LayoutStrategy=ContiguousVariables())
+function model_metadata(::Type{Bus}; layout::LayoutStrategy=ContiguousVariables())
     ModelMetadata(
-        name = :Bus1Ph,
+        name = :Bus,
         vars = BUS1PH_VARS,
         output_vars = BUS1PH_OUTPUT_VARS,
         layout = layout
@@ -49,9 +49,9 @@ end
 
 ### === Format Support === ###
 
-supports_format(::Type{Bus1Ph}, ::Type{PSSE}) = FormatSupport{PSSE}()
+supports_format(::Type{Bus}, ::Type{PSSE}) = FormatSupport{PSSE}()
 
-function parse_model(model::Type{Bus1Ph}, raw, ::FormatSupport{PSSE})
+function parse_model(model::Type{Bus}, raw, ::FormatSupport{PSSE})
     buses = raw.buses
     mod = parentmodule(model)
 
@@ -77,7 +77,7 @@ function parse_model(model::Type{Bus1Ph}, raw, ::FormatSupport{PSSE})
 end
 
 
-@testitem "Bus1Ph" begin
+@testitem "Bus" begin
     using PowerFlowData
     using Powerful
     using Powerful.Models
@@ -88,9 +88,9 @@ end
         joinpath(pkgdir(Powerful), "cases", "ieee14.raw")
     )
 
-    bus1ph = parse_model(Bus1Ph, case)
-    # @test bus1ph isa Bus1PhVec
+    bus = parse_model(Bus, case)
+    # @test bus isa BusVec
 
-    # struct_array = to_struct_array(bus1ph)
+    # struct_array = to_struct_array(bus)
     # @test struct_array isa StructArray
 end

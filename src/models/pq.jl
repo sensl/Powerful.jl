@@ -26,7 +26,7 @@ const PQ_VARS = [
     ModelVar(
         :theta,
         Algeb(),
-        Bus1Ph,
+        Bus,
         :theta,
         description="Active power injection",
         units="pu",
@@ -34,7 +34,7 @@ const PQ_VARS = [
     ModelVar(
         :v,
         Algeb(),
-        Bus1Ph,
+        Bus,
         :v,
         description="Voltage magnitude", 
         units="pu",

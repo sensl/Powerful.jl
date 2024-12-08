@@ -205,35 +205,35 @@ end
 
     ### === Test ContiguousVariables layout === ###
     am = AddressManager()
-    bus1ph_metadata = model_metadata(Bus1Ph)
-    allocate_model!(am, :Bus1Ph, bus1ph_metadata, 5);
+    bus_metadata = model_metadata(Bus)
+    allocate_model!(am, :Bus, bus_metadata, 5);
 
-    @test am.allocations[:Bus1Ph].is_complete
-    @test is_model_allocated(am, :Bus1Ph)
-    @test is_var_allocated(am, :Bus1Ph, :theta)
-    @test is_var_allocated(am, :Bus1Ph, :v)
+    @test am.allocations[:Bus].is_complete
+    @test is_model_allocated(am, :Bus)
+    @test is_var_allocated(am, :Bus, :theta)
+    @test is_var_allocated(am, :Bus, :v)
 
-    make_addr_struct(:Bus1Ph, bus1ph_metadata)
-    addr = make_addr_inst(am, bus1ph_metadata)
+    make_addr_struct(:Bus, bus_metadata)
+    addr = make_addr_inst(am, bus_metadata)
     @test all(addr._theta .== collect(UInt, 1:5))
     @test all(addr._v .== collect(UInt, 6:10))
 
     ### === Test ContiguousInstances layout === ###
     am = AddressManager()
-    allocate_model!(am, :Bus1Ph, model_metadata(Bus1Ph; layout=ContiguousInstances()), 5);
+    allocate_model!(am, :Bus, model_metadata(Bus; layout=ContiguousInstances()), 5);
 
-    make_addr_struct(:Bus1Ph, bus1ph_metadata)
-    addr = make_addr_inst(am, bus1ph_metadata)
+    make_addr_struct(:Bus, bus_metadata)
+    addr = make_addr_inst(am, bus_metadata)
     @test all(addr._theta .== [1, 3, 5, 7, 9])
     @test all(addr._v .== [2, 4, 6, 8, 10])
 
     # Add more edge cases
     am = AddressManager()
-    @test_throws ArgumentError allocate_model!(am, :Bus1Ph, bus1ph_metadata, 0)
+    @test_throws ArgumentError allocate_model!(am, :Bus, bus_metadata, 0)
     
     # Test reallocation attempts
     am = AddressManager()
-    allocate_model!(am, :Bus1Ph, bus1ph_metadata, 5)
-    @test_throws ArgumentError allocate_model!(am, :Bus1Ph, bus1ph_metadata, 3)
+    allocate_model!(am, :Bus, bus_metadata, 5)
+    @test_throws ArgumentError allocate_model!(am, :Bus, bus_metadata, 3)
     
 end
