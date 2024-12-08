@@ -3,8 +3,6 @@ import Powerful.PowerCore: supports_format, parse_model
 
 export PQ, PQVec, PQNumerical
 
-abstract type AbstractLoad{Tv} <: AbstractModel end
-
 @vectorize_model mutable struct PQ{Tv} <: AbstractLoad{Tv}
     i::Int32
     id::String3
@@ -21,6 +19,8 @@ abstract type AbstractLoad{Tv} <: AbstractModel end
     scale::Union{Bool,Missing}
     intrpt::Union{Bool,Missing}
 end
+
+@register_model PQ
 
 const PQ_VARS = [
     ModelVar(
@@ -82,8 +82,6 @@ function parse_model(model::Type{PQ}, raw, ::FormatSupport{PSSE})
         intrpt = loads.intrpt,
     )
 end
-
-@register_model PQ
 
 
 ### === Begin Tests === ###

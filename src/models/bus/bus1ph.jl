@@ -16,6 +16,8 @@ export Bus1Ph, Bus1PhVec, Bus1PhNumerical
     evlo::Tv
 end
 
+@register_model Bus1Ph
+
 const BUS1PH_VARS = [
     ModelVar(:theta, Algeb(),
         description="Bus voltage angle",
@@ -44,7 +46,6 @@ function model_metadata(::Type{Bus1Ph}; layout::LayoutStrategy=ContiguousVariabl
     )
 end
 
-@register_model Bus1Ph
 
 ### === Format Support === ###
 

@@ -124,27 +124,32 @@ Base.@kwdef struct ModelMetadata
     layout::LayoutStrategy = ContiguousVariables()
 end
 
+# Bus/Node model types
 abstract type NodeTrait end
 struct ACNode <: NodeTrait end
 struct DCNode <: NodeTrait end
 
+# Load model types
+abstract type AbstractLoad{Tv} <: AbstractModel end
 
 export ModelMetadata
+export NodeTrait, ACNode, DCNode
+export AbstractLoad
 
 ### ============= End Model Metadata and Traits ============= ###
 
 ### ============= System Types ============= ###
 
-struct SystemModel{T<:Tuple}
+mutable struct SystemModel{T<:NamedTuple}
     address_manager::AddressManager
     models::T
     # TODO: Boundary buses/dc nodes?
 
     # Inner constructor to validate component types
-    function SystemModel(am::AddressManager, components::Tuple)
+    function SystemModel(am::AddressManager, components::NamedTuple)
         # Ensure all elements are vectors of AbstractModel subtypes
-        all(V -> V <: AbstractModel, typeof.(components)) || 
-            error("All components must be AbstractModel subtypes")
+        all(V -> V <: AbstractModel, typeof.(values(components))) || 
+            error("All components must be vectors of AbstractModel subtypes")
         new{typeof(components)}(am, components)
     end
 end
