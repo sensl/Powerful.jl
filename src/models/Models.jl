@@ -16,14 +16,16 @@ include("model_variants.jl")
 include("bus/bus.jl")
 include("pq.jl")
 
+
 # @setup_workload begin
 #     # Replace both the execution and precompilation blocks with:
+
 #     @compile_workload begin
-#         for model in MODEL_REGISTRY[].models
-#             generate_numerical_type(model)
-#             generate_vector_type(model)
-#         end
 #     end
 # end
+        for model in MODEL_REGISTRY[].models
+            generate_numerical_type(model)
+            generate_vector_type(model)
+        end
 
 end # module

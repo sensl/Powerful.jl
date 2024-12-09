@@ -48,27 +48,11 @@ function generate_numerical_type(::Type{T}) where T
     )
     
     # Evaluate the new type
-    # return Core.eval(parentmodule(T), quote
-    #     Base.@kwdef $struct_expr
-    # end)
-
-    return struct_expr
-end
-
-
-
-"""
-Macro for generating numerical type with proper scoping
-"""
-macro make_numerical_type(T)
-    expr = generate_numerical_type(eval(T))
-    ret = esc(quote
-        Base.@kwdef $expr
+    @show parentmodule(T)
+    return Core.eval(parentmodule(T), quote
+        Base.@kwdef $struct_expr
     end)
-    # @show ret
-    return ret
 end
-
 
 function generate_vector_type(::Type{T}) where T
     struct_name = Symbol(nameof(T), "Vec")
@@ -79,7 +63,8 @@ function generate_vector_type(::Type{T}) where T
     field_types = type_def.types
     
     # Create vectorized field expressions
-    field_exprs = [:($(fields[i])::Vector{$(field_types[i])}) for i in 1:length(fields)]
+    # TODO: bug here: Union and InlineStrings are not handled correctly
+    field_exprs = [:($(fields[i])::Vector{$(Symbol(field_types[i]))}) for i in eachindex(fields)]
     
     # Get type parameters and supertype
     type_params = if T isa UnionAll
@@ -88,7 +73,7 @@ function generate_vector_type(::Type{T}) where T
         T.parameters
     end
     
-        # Extract the supertype
+    # Extract the supertype
     supertype_expr = if T isa UnionAll
         super = supertype(Base.unwrap_unionall(T))
         if super !== Any
@@ -120,33 +105,17 @@ function generate_vector_type(::Type{T}) where T
         supertype_expr === nothing ? struct_name : Expr(:(<:), struct_name, supertype_expr)
     end
     
-    @show param_expr
-    @show field_exprs
 
     # Generate struct definition
     struct_expr = Expr(:struct, true,
         param_expr,
         Expr(:block, field_exprs...)
     )
-    # @show struct_expr
+
     # Evaluate in the same module as the original type
-    # return Core.eval(parentmodule(T), quote
-    #     Base.@kwdef $struct_expr
-    # end)
-    return struct_expr
-
-#     return :(mutable struct BusVec{Tv} <: AbstractBus{Tv}
-#       vm::Vector{Tv}
-#   end)
-end
-
-"""
-Macro for generating vector type with proper scoping
-"""
-macro make_vector_type(T)
-    expr = generate_vector_type(eval(T))
-    return esc(quote
-        $expr
+    return Core.eval(parentmodule(T), quote
+        using InlineStrings
+        Base.@kwdef $struct_expr
     end)
 end
 
