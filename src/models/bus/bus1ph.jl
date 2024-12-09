@@ -1,24 +1,28 @@
 export Bus, BusVec, BusNumerical
 
 Base.@kwdef mutable struct Bus{Tv} <: AbstractBus{Tv}
-    i::Int32
-    name::String15
-    basekv::Tv
-    ide::Int8
-    area::Int16
-    zone::Int16
-    owner::Int16
+    # i::Int32
+    # name::String15
+    # basekv::Tv
+    # ide::Int8
+    # area::Int16
+    # zone::Int16
+    # owner::Int16
     vm::Tv
-    va::Tv
-    nvhi::Tv
-    nvlo::Tv
-    evhi::Tv
-    evlo::Tv
+    # va::Tv
+    # nvhi::Tv
+    # nvlo::Tv
+    # evhi::Tv
+    # evlo::Tv
 end
 
 @register_model Bus
 
-register_numerical_fields(Bus, :basekv, :vm, :va, :nvhi, :nvlo, :evhi, :evlo)
+# register_numerical_fields(Bus, :basekv, :vm, :va, :nvhi, :nvlo, :evhi, :evlo)
+register_numerical_fields(Bus, :vm)
+
+@generate_numerical_type(Bus)
+@generate_vector_type(Bus)
 
 const BUS1PH_VARS = [
     ModelVar(:theta, Algeb(),

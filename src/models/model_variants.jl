@@ -48,10 +48,25 @@ function generate_numerical_type(::Type{T}) where T
     )
     
     # Evaluate the new type
-    return Core.eval(parentmodule(T), quote
-        Base.@kwdef $struct_expr
+    # return Core.eval(parentmodule(T), quote
+    #     Base.@kwdef $struct_expr
+    # end)
+
+    return struct_expr
+end
+
+
+
+"""
+Macro for generating numerical type with proper scoping
+"""
+macro generate_numerical_type(T)
+    expr = generate_numerical_type(eval(T))
+    return esc(quote
+        Base.@kwdef $expr
     end)
 end
+
 
 function generate_vector_type(::Type{T}) where T
     struct_name = Symbol(nameof(T), "Vec")
@@ -110,8 +125,19 @@ function generate_vector_type(::Type{T}) where T
     )
     @show struct_expr
     # Evaluate in the same module as the original type
-    return Core.eval(parentmodule(T), quote
-        Base.@kwdef $struct_expr
+    # return Core.eval(parentmodule(T), quote
+    #     Base.@kwdef $struct_expr
+    # end)
+    return struct_expr
+end
+
+"""
+Macro for generating vector type with proper scoping
+"""
+macro generate_vector_type(T)
+    expr = generate_vector_type(eval(T))
+    return esc(quote
+        Base.@kwdef $expr
     end)
 end
 
