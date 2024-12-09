@@ -2,6 +2,8 @@
 const _NUMERICAL_FIELDS_REGISTRY = Dict{Symbol, Vector{Symbol}}()
 
 """
+$(SIGNATURES)
+
 Register numerical fields for a model type
 """
 function register_numerical_fields(::Type{T}, fields::Symbol...) where T
@@ -9,6 +11,20 @@ function register_numerical_fields(::Type{T}, fields::Symbol...) where T
 end
 
 """
+$(SIGNATURES)
+
+Helper function to extract and validate type information
+"""
+function _extract_type_info(::Type{T}) where T
+    fields = fieldnames(T)
+    field_types = Base.unwrap_unionall(T).types
+    is_mutable = ismutable(T)
+    return fields, field_types, is_mutable
+end
+
+"""
+$(SIGNATURES)
+
 Generate numerical variant of a type using registered fields
 """
 function generate_numerical_type(::Type{T}) where T
@@ -17,9 +33,9 @@ function generate_numerical_type(::Type{T}) where T
     isempty(numerical_fields) && error("No numerical fields registered for $model_name")
     
     # Get field information from the original type definition
-    fields = fieldnames(T)
-    field_types = Base.unwrap_unionall(T).types
+    fields, field_types, is_mutable = _extract_type_info(T)
 
+    # Filter fields that are numerical
     num_idx = [i for i in eachindex(fields) if fields[i] in numerical_fields]
     fields_filtered = [fields[i] for i in num_idx]
     field_types_filtered = [field_types[i] for i in num_idx]
@@ -28,7 +44,7 @@ function generate_numerical_type(::Type{T}) where T
     param_expr = _find_param_expr(T; suffix = :Num)
 
     # Generate struct definition
-    struct_expr = Expr(:struct, true,
+    struct_expr = Expr(:struct, is_mutable,
         param_expr,
         Expr(:block, field_exprs...)
     )
@@ -39,17 +55,21 @@ function generate_numerical_type(::Type{T}) where T
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Generate vectorized variant of a type
+"""
 function generate_vector_type(::Type{T}) where T
 
     # Get field information from the original type definition
-    fields = fieldnames(T)
-    field_types = Base.unwrap_unionall(T).types
+    fields, field_types, is_mutable = _extract_type_info(T)
     
     field_exprs = _find_field_exprs(fields, field_types)
     param_expr = _find_param_expr(T; suffix = :Vec)
 
     # Generate struct definition
-    struct_expr = Expr(:struct, true,
+    struct_expr = Expr(:struct, is_mutable,
         param_expr,
         Expr(:block, field_exprs...)
     )
@@ -61,6 +81,11 @@ function generate_vector_type(::Type{T}) where T
     end)
 end
 
+"""
+$(SIGNATURES)
+
+Helper function for finding the field expressions for a type
+"""
 function _find_field_exprs(fields, field_types)
     # Create vectorized field expressions
     field_exprs = [
@@ -80,6 +105,8 @@ function _find_field_exprs(fields, field_types)
 end
 
 """
+$(SIGNATURES)
+
 Helper function for finding the supertype information for a type
 """
 function _find_param_expr(::Type{T}; suffix::Symbol) where T
@@ -128,6 +155,8 @@ function _find_param_expr(::Type{T}; suffix::Symbol) where T
 end
 
 """
+$(SIGNATURES)
+
 Generate all variants (Numerical and Vectorized) for registered models
 """
 function generate_model_variants(models::Vector{DataType})
