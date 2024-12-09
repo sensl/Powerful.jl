@@ -16,31 +16,17 @@ function generate_numerical_type(::Type{T}) where T
     numerical_fields = get(_NUMERICAL_FIELDS_REGISTRY, model_name, Symbol[])
     isempty(numerical_fields) && error("No numerical fields registered for $model_name")
     
-    # Create name for numerical struct
-    struct_name = Symbol(model_name, "Num")
-    
     # Get field information from the original type definition
-    type_def = Base.unwrap_unionall(T)
     fields = fieldnames(T)
-    field_types = type_def.types
-    
-    # Filter numerical fields and preserve their types
-    field_indices = findall(f -> f in numerical_fields, collect(fields))
-    field_exprs = [:($(fields[i])::$(field_types[i])) for i in field_indices]
-    
-    # Get type parameters
-    type_params = if T isa UnionAll
-        [T.var.name]  # e.g., :Tv from Bus{Tv}
-    else
-        T.parameters
-    end
-    
-    param_expr = if !isempty(type_params)
-        Expr(:curly, struct_name, type_params...)
-    else
-        struct_name
-    end
-    
+    field_types = Base.unwrap_unionall(T).types
+
+    num_idx = [i for i in eachindex(fields) if fields[i] in numerical_fields]
+    fields_filtered = [fields[i] for i in num_idx]
+    field_types_filtered = [field_types[i] for i in num_idx]
+
+    field_exprs = _find_field_exprs(fields_filtered, field_types_filtered)
+    param_expr = _find_param_expr(T; suffix = :Num)
+
     # Generate struct definition
     struct_expr = Expr(:struct, true,
         param_expr,
@@ -54,13 +40,28 @@ function generate_numerical_type(::Type{T}) where T
 end
 
 function generate_vector_type(::Type{T}) where T
-    struct_name = Symbol(nameof(T), "Vec")
-    fields = fieldnames(T)
-    
+
     # Get field information from the original type definition
-    type_def = Base.unwrap_unionall(T)
-    field_types = type_def.types
+    fields = fieldnames(T)
+    field_types = Base.unwrap_unionall(T).types
     
+    field_exprs = _find_field_exprs(fields, field_types)
+    param_expr = _find_param_expr(T; suffix = :Vec)
+
+    # Generate struct definition
+    struct_expr = Expr(:struct, true,
+        param_expr,
+        Expr(:block, field_exprs...)
+    )
+
+    # Evaluate in the same module as the original type
+    return Core.eval(parentmodule(T), quote
+        using InlineStrings
+        Base.@kwdef $struct_expr
+    end)
+end
+
+function _find_field_exprs(fields, field_types)
     # Create vectorized field expressions
     field_exprs = [
         begin
@@ -76,14 +77,21 @@ function generate_vector_type(::Type{T}) where T
             :($(fields[i])::Vector{$type_expr})
         end for i in eachindex(fields)
     ]
-    
+end
+
+"""
+Helper function for finding the supertype information for a type
+"""
+function _find_param_expr(::Type{T}; suffix::Symbol) where T
+    struct_name = Symbol(nameof(T), suffix)
+
     # Get type parameters and supertype
     type_params = if T isa UnionAll
         [T.var.name]
     else
         T.parameters
     end
-    
+
     # Extract the supertype
     supertype_expr = if T isa UnionAll
         super = supertype(Base.unwrap_unionall(T))
@@ -115,19 +123,8 @@ function generate_vector_type(::Type{T}) where T
     else
         supertype_expr === nothing ? struct_name : Expr(:(<:), struct_name, supertype_expr)
     end
-    
 
-    # Generate struct definition
-    struct_expr = Expr(:struct, true,
-        param_expr,
-        Expr(:block, field_exprs...)
-    )
-
-    # Evaluate in the same module as the original type
-    return Core.eval(parentmodule(T), quote
-        using InlineStrings
-        Base.@kwdef $struct_expr
-    end)
+    return param_expr
 end
 
 """
