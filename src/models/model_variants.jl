@@ -60,11 +60,13 @@ end
 """
 Macro for generating numerical type with proper scoping
 """
-macro generate_numerical_type(T)
+macro make_numerical_type(T)
     expr = generate_numerical_type(eval(T))
-    return esc(quote
+    ret = esc(quote
         Base.@kwdef $expr
     end)
+    # @show ret
+    return ret
 end
 
 
@@ -118,26 +120,33 @@ function generate_vector_type(::Type{T}) where T
         supertype_expr === nothing ? struct_name : Expr(:(<:), struct_name, supertype_expr)
     end
     
+    @show param_expr
+    @show field_exprs
+
     # Generate struct definition
     struct_expr = Expr(:struct, true,
         param_expr,
         Expr(:block, field_exprs...)
     )
-    @show struct_expr
+    # @show struct_expr
     # Evaluate in the same module as the original type
     # return Core.eval(parentmodule(T), quote
     #     Base.@kwdef $struct_expr
     # end)
     return struct_expr
+
+#     return :(mutable struct BusVec{Tv} <: AbstractBus{Tv}
+#       vm::Vector{Tv}
+#   end)
 end
 
 """
 Macro for generating vector type with proper scoping
 """
-macro generate_vector_type(T)
+macro make_vector_type(T)
     expr = generate_vector_type(eval(T))
     return esc(quote
-        Base.@kwdef $expr
+        $expr
     end)
 end
 
