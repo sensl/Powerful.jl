@@ -1,6 +1,6 @@
 using InlineStrings
 
-export Bus, BusVec, BusNumerical
+export Bus, BusVec, BusNum
 
 Base.@kwdef mutable struct Bus{Tv} <: AbstractBus{Tv}
     i::Int32
