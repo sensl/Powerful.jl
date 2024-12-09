@@ -53,9 +53,6 @@ function generate_numerical_type(::Type{T}) where T
     end)
 end
 
-"""
-Create vectorized version of any struct
-"""
 function generate_vector_type(::Type{T}) where T
     struct_name = Symbol(nameof(T), "Vec")
     fields = fieldnames(T)
@@ -67,17 +64,43 @@ function generate_vector_type(::Type{T}) where T
     # Create vectorized field expressions
     field_exprs = [:($(fields[i])::Vector{$(field_types[i])}) for i in 1:length(fields)]
     
-    # Get type parameters
+    # Get type parameters and supertype
     type_params = if T isa UnionAll
-        [T.var.name]  # e.g., :Tv from Bus{Tv}
+        [T.var.name]
     else
         T.parameters
     end
     
-    param_expr = if !isempty(type_params)
-        Expr(:curly, struct_name, type_params...)
+        # Extract the supertype
+    supertype_expr = if T isa UnionAll
+        super = supertype(Base.unwrap_unionall(T))
+        if super !== Any
+            super  # Return the supertype directly
+        else
+            nothing
+        end
     else
-        struct_name
+        super = supertype(T)
+        if super !== Any
+            super  # Return the supertype directly
+        else
+            nothing
+        end
+    end
+    
+    # Construct the type expression with parameters
+    param_expr = if !isempty(type_params)
+        if supertype_expr === nothing
+            Expr(:curly, struct_name, type_params...)
+        else
+            # Create the proper type constraint expression
+            Expr(:(<:), 
+                Expr(:curly, struct_name, type_params...),
+                Expr(:curly, nameof(supertype_expr), type_params...)
+            )
+        end
+    else
+        supertype_expr === nothing ? struct_name : Expr(:(<:), struct_name, supertype_expr)
     end
     
     # Generate struct definition
@@ -85,7 +108,6 @@ function generate_vector_type(::Type{T}) where T
         param_expr,
         Expr(:block, field_exprs...)
     )
-    
     @show struct_expr
     # Evaluate in the same module as the original type
     return Core.eval(parentmodule(T), quote
