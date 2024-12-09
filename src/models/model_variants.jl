@@ -48,7 +48,6 @@ function generate_numerical_type(::Type{T}) where T
     )
     
     # Evaluate the new type
-    @show parentmodule(T)
     return Core.eval(parentmodule(T), quote
         Base.@kwdef $struct_expr
     end)
@@ -63,8 +62,20 @@ function generate_vector_type(::Type{T}) where T
     field_types = type_def.types
     
     # Create vectorized field expressions
-    # TODO: bug here: Union and InlineStrings are not handled correctly
-    field_exprs = [:($(fields[i])::Vector{$(Symbol(field_types[i]))}) for i in eachindex(fields)]
+    field_exprs = [
+        begin
+            field_type = field_types[i]
+            type_expr = if field_type isa Union
+                # Handle Union types using Base.uniontypes
+                union_types = map(t -> Symbol(split(string(t), ".")[end]), Base.uniontypes(field_type))
+                Expr(:curly, :Union, union_types...)
+            else
+                # Handle simple types, stripping module qualification
+                Symbol(split(string(field_type), ".")[end])
+            end
+            :($(fields[i])::Vector{$type_expr})
+        end for i in eachindex(fields)
+    ]
     
     # Get type parameters and supertype
     type_params = if T isa UnionAll

@@ -17,15 +17,13 @@ include("bus/bus.jl")
 include("pq.jl")
 
 
-# @setup_workload begin
-#     # Replace both the execution and precompilation blocks with:
-
-#     @compile_workload begin
-#     end
-# end
+@setup_workload begin
+    @compile_workload begin
         for model in MODEL_REGISTRY[].models
             generate_numerical_type(model)
             generate_vector_type(model)
         end
+    end
+end
 
 end # module

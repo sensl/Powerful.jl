@@ -4,7 +4,7 @@ export Bus, BusVec, BusNumerical
 
 Base.@kwdef mutable struct Bus{Tv} <: AbstractBus{Tv}
     i::Int32
-    # name::String15
+    name::String15
     basekv::Tv
     ide::Int8
     area::Int16
@@ -63,7 +63,6 @@ function parse_model(model::Type{Bus}, raw, ::FormatSupport{PSSE})
     #   Otherwise, `model` will be the fully qualified name, and this will fail
     vec_type = getfield(mod, Symbol(nameof(model), "Vec"))
 
-    @show vec_type
     return vec_type(;
         i = buses.i,
         name = buses.name,
