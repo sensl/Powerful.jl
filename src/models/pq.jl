@@ -5,7 +5,7 @@ export PQ, PQVec, PQNumerical
 
 mutable struct PQ{Tv} <: AbstractLoad{Tv}
     i::Int32
-    # id::String3
+    id::String3
     status::Bool
     area::Int16
     zone::Int16
