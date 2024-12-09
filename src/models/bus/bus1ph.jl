@@ -1,6 +1,6 @@
 export Bus, BusVec, BusNumerical
 
-@vectorize_model mutable struct Bus{Tv} <: AbstractBus{Tv}
+Base.@kwdef mutable struct Bus{Tv} <: AbstractBus{Tv}
     i::Int32
     name::String15
     basekv::Tv
@@ -17,6 +17,8 @@ export Bus, BusVec, BusNumerical
 end
 
 @register_model Bus
+
+register_numerical_fields(Bus, :basekv, :vm, :va, :nvhi, :nvlo, :evhi, :evlo)
 
 const BUS1PH_VARS = [
     ModelVar(:theta, Algeb(),
@@ -59,7 +61,8 @@ function parse_model(model::Type{Bus}, raw, ::FormatSupport{PSSE})
     #   Otherwise, `model` will be the fully qualified name, and this will fail
     vec_type = getfield(mod, Symbol(nameof(model), "Vec"))
 
-    return vec_type(
+    @show vec_type
+    return vec_type(;
         i = buses.i,
         name = buses.name,
         basekv = buses.basekv,

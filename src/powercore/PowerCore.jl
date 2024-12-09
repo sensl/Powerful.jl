@@ -20,8 +20,6 @@ export allocate_model!, get_var_addresses
 
 include("system.jl")
 
-include("vectorizer.jl")
-
 include("format_traits.jl")
 
 include("model_var.jl")

@@ -3,7 +3,7 @@ import Powerful.PowerCore: supports_format, parse_model
 
 export PQ, PQVec, PQNumerical
 
-@vectorize_model mutable struct PQ{Tv} <: AbstractLoad{Tv}
+mutable struct PQ{Tv} <: AbstractLoad{Tv}
     i::Int32
     id::String3
     status::Bool
@@ -21,6 +21,8 @@ export PQ, PQVec, PQNumerical
 end
 
 @register_model PQ
+
+register_numerical_fields(PQ, :pl, :ql, :ip, :iq, :yp, :yq)
 
 const PQ_VARS = [
     ModelVar(
