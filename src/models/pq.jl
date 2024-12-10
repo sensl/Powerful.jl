@@ -28,7 +28,7 @@ const PQ_VARS = [
     ModelVar(
         :theta,
         AlgebVar(), 
-        Bus,
+        :Bus,
         :theta,
         description="Active power injection",
         units="pu",
@@ -36,7 +36,7 @@ const PQ_VARS = [
     ModelVar(
         :v,
         AlgebVar(),
-        Bus,
+        :Bus,
         :v,
         description="Voltage magnitude", 
         units="pu",
@@ -46,6 +46,27 @@ const PQ_VARS = [
 
 const PQ_OUTPUT_VARS = []
 
+const PQ_RESIDUALS = [
+    ModelResidual(
+        :p,
+        AlgebRes(),
+        SharedRes(),
+        :Bus,
+        :p,
+        :i,
+        description="Active power injection from load",
+    ),
+    ModelResidual(
+        :q,
+        AlgebRes(),
+        SharedRes(),
+        :Bus,
+        :q,
+        :i,
+        description="Reactive power injection from load",
+    )
+]
+
 """
 Get metadata for PQ load model
 """
@@ -54,6 +75,7 @@ function model_metadata(::Type{PQ}; layout::LayoutStrategy=ContiguousVariables()
         name = :PQ,
         vars = PQ_VARS,
         output_vars = PQ_OUTPUT_VARS,
+        residuals = PQ_RESIDUALS,
         layout = layout
     )
 end

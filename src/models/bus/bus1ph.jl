@@ -46,13 +46,13 @@ const BUS1PH_OUTPUT_VARS = [:theta, :v]
 # Define residual variables similar to model variables
 const BUS1PH_RESIDUALS = [
     ModelResidual(
-        :p_balance,
+        :p,
         AlgebRes(),
         SharedRes();
         description="Active power balance equation",
     ),
     ModelResidual(
-        :q_balance, 
+        :q, 
         AlgebRes(),
         SharedRes();
         description="Reactive power balance equation",

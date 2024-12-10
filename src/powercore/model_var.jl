@@ -35,18 +35,18 @@ Constructor for external variables
 function ModelVar(
     name::Symbol,
     var_type::VT,
-    source_model::T,
+    source_model::Symbol,
     source_var::Symbol;
     description::String = "",
     units::String = ""
-) where {T<:Type{<:AbstractModel}, VT<:AddressableType}
+) where {VT<:AddressableType}
     props = PropertyDict()
     
     # Add properties if provided
     !isempty(description) && (props[Description] = Description(description))
     !isempty(units) && (props[Units] = Units(units))
     
-    ModelVar{External, VT, T, PropertyDict}(
+    ModelVar{External, VT, Symbol, PropertyDict}(
         name,
         var_type,
         source_model,
@@ -65,7 +65,7 @@ function ModelResidual(
     access::RA;
     description::String = ""
 ) where {ET<:AddressableRes, RA<:ResAccess}
-    ModelResidual{ET, RA, Nothing, Nothing, Nothing}(
+    ModelResidual{Internal, ET, RA, Nothing, Nothing, Nothing}(
         name,
         eq_type,
         access,
@@ -84,11 +84,11 @@ function ModelResidual(
     eq_type::ET,
     access::RA,
     source_model::SM,
-    source_residual::SR;
-    indexer::IN = nothing,
+    source_residual::SR,
+    indexer::IN = nothing;
     description::String = ""
 ) where {ET<:AddressableRes, RA<:ResAccess, SM, SR, IN}
-    ModelResidual{ET, RA, SM, SR, IN}(
+    ModelResidual{External, ET, RA, SM, SR, IN}(
         name,
         eq_type,
         access,
@@ -102,7 +102,10 @@ end
 # === Helper Functions === #
 is_internal(::ModelVar{Internal, VT, SM, P}) where {VT, SM, P} = true
 is_internal(::ModelVar{External, VT, SM, P}) where {VT, SM, P} = false
+
 is_external(v::ModelVar) = !is_internal(v)
+is_internal(::ModelResidual{Internal, ET, RA, SM, SR, IN}) where {ET, RA, SM, SR, IN} = true
+is_internal(::ModelResidual{External, ET, RA, SM, SR, IN}) where {ET, RA, SM, SR, IN} = false
 
 # Property access helpers
 function get_property(var::ModelVar, ::Type{T}) where {T<:VarProperty}

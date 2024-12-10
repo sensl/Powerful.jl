@@ -51,9 +51,14 @@ Type parameters:
 - SM: Source model type or Nothing
 - Props: Type of properties dictionary
 """
-struct ModelVar{T<:VarTrait,VT<:Union{AddressableVar,Nothing},SM<:Union{Type,Nothing},Props<:PropertyDict}
+struct ModelVar{
+    T<:VarTrait,
+    AT<:AddressableVar,
+    SM<:Union{Symbol,Nothing},
+    Props<:PropertyDict
+}
     name::Symbol
-    var_type::VT
+    address_type::AT
     source_model::SM
     source_var::Union{Symbol,Nothing}
     properties::Props
@@ -64,14 +69,15 @@ struct SharedRes <: ResAccess end
 struct PrivateRes <: ResAccess end
 
 struct ModelResidual{
-    ET<:AddressableRes,
+    T<:VarTrait,
+    AT<:AddressableRes,
     RA<:ResAccess,
-    SM<:Union{Type,Nothing},
+    SM<:Union{Symbol,Nothing},
     SR<:Union{Symbol,Nothing},
     IN<:Union{Symbol,Nothing}
 }
     name::Symbol
-    eq_type::ET
+    address_type::AT
     access::RA
     source_model::SM
     source_residual::SR
@@ -79,8 +85,9 @@ struct ModelResidual{
     description::String
 end
 
-export AddressableType, AlgebVar, StateVar, ObservedVar
-export AddressableRes, AlgebRes, StateRes
+export AddressableType, AddressableVar, AddressableRes
+export AlgebVar, StateVar, ObservedVar
+export AlgebRes, StateRes
 export VarTrait, Internal, External
 export VarOwnership, OwnVar, ForeignVar
 export VarProperty, Description, Units, Bounds, PropertyDict
