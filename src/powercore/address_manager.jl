@@ -1,6 +1,22 @@
 export allocate_model!
 export make_addr_struct, make_addr_inst
 
+
+# Constructor with default empty dictionaries
+function ModelAllocation(model_name::Symbol)
+    addressable_types = [AlgebVar, AlgebRes, StateVar, StateRes, ObservedVar]
+
+    by_type = Dict{AddressableType, Dict{Symbol,Vector{UInt}}}()
+
+    # Initialize empty dictionaries for each addressable type
+    for type in addressable_types
+        by_type[type()] = Dict{Symbol,Vector{UInt}}()
+    end
+
+    ModelAllocation(model_name, by_type, false)
+end
+
+
 """
 Get all allocated addresses for a model instance
 """
@@ -65,13 +81,10 @@ function make_addr_inst(
     # Get the generated address type
     addr_type = getfield(@__MODULE__, Symbol(model_name, :Addresses))
     
-    # Get allocations for internal variables
-    var_allocations = _get_model_addrs_dict(am, model_name).var_allocations
-    
     # Create indices only for internal variables
     # @kwdef will use empty vectors as defaults for external variables
     indices = NamedTuple(
-        Symbol("_", var.name) => var_allocations[var.name]
+        Symbol("_", var.name) => am.addresses[(var.address_type, model_name, var.name)]
         for var in metadata.vars
         if var isa ModelVar{Internal}
     )
@@ -106,6 +119,8 @@ function allocate_model!(
         throw(ArgumentError("Unsupported layout strategy"))
     end
 
+    am.allocations[model_name].is_complete = true
+
 end
 
 function _alloc_contiguous_vars!(
@@ -115,7 +130,12 @@ function _alloc_contiguous_vars!(
     device_count::Int,
 ) where T
 
-    var_allocations = Dict{Symbol, Vector{UInt}}()
+    if haskey(am.allocations, model_name)
+        by_type = am.allocations[model_name].by_type
+    else
+        am.allocations[model_name] = ModelAllocation(model_name)
+        by_type = am.allocations[model_name].by_type
+    end
 
     # filter out external vars using `is_internal`
     internal_vars = filter(is_internal, allocable)
@@ -126,21 +146,9 @@ function _alloc_contiguous_vars!(
         
         am.addresses[(var.address_type, model_name, var.name)] = range
         am.next_idx[var.address_type] = start_idx + device_count
-        var_allocations[var.name] = range
+        by_type[var.address_type][var.name] = range
     end
 
-    # Record allocation
-    if haskey(am.allocations, model_name)
-        # Add to existing allocation
-        merge!(am.allocations[model_name].var_allocations, var_allocations)
-    else
-        # Create new allocation
-        am.allocations[model_name] = ModelAllocation(
-            model_name,
-            var_allocations,
-            true  # complete allocation
-        )
-    end
 end
 
 """
@@ -163,8 +171,14 @@ function _alloc_contiguous_instances!(
     for var in internal_vars
         type_start_indices[var.address_type] = get!(am.next_idx, var.address_type, 1)
     end
+
+    if haskey(am.allocations, model_name)
+        by_type = am.allocations[model_name].by_type
+    else
+        am.allocations[model_name] = ModelAllocation(model_name)
+        by_type = am.allocations[model_name].by_type
+    end
     
-    var_allocations = Dict{Symbol, Vector{UInt}}()
     # Allocate all variables for each instance together
     for (var_idx, var) in enumerate(internal_vars)
         start_idx = type_start_indices[var.address_type]
@@ -176,21 +190,8 @@ function _alloc_contiguous_instances!(
         # Update next available index for this variable type
         am.next_idx[var.address_type] = start_idx + device_count * vars_per_instance
 
-        var_allocations[var.name] = am.addresses[(var.address_type, model_name, var.name)]
-    end
-
-
-    # Record allocation
-    if haskey(am.allocations, model_name)
-        # Add to existing allocation
-        merge!(am.allocations[model_name].var_allocations, var_allocations)
-    else
-        # Create new allocation
-        am.allocations[model_name] = ModelAllocation(
-            model_name,
-            var_allocations,
-            true  # complete allocation
-        )
+        by_type[var.address_type][var.name] = 
+            am.addresses[(var.address_type, model_name, var.name)]
     end
 
 end
@@ -208,10 +209,15 @@ end
 Check if specific variable is allocated
 """
 function is_var_allocated(am::AddressManager, model_name::Symbol, var::Symbol)
-    haskey(am.allocations, model_name) &&
-        haskey(am.allocations[model_name].var_allocations, var)
+    if haskey(am.allocations, model_name)
+        for (addr_type, vars) in am.allocations[model_name].by_type
+            if haskey(vars, var)
+                return true
+            end
+        end
+    end
+    return false
 end
-
 
 
 @testitem "Address Manager" begin

@@ -109,9 +109,10 @@ abstract type ModelAddresses end
 """
 Tracks allocation status for a specific model type
 """
-struct ModelAllocation
+mutable struct ModelAllocation
     model_name::Symbol
-    var_allocations::Dict{Symbol,Vector{UInt}}  # var_name => range
+    # maps addressable type => variable name => range
+    by_type::Dict{AddressableType,Dict{Symbol,Vector{UInt}}}
     is_complete::Bool  # true if all required variables are allocated
 end
 
