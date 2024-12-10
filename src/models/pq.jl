@@ -27,7 +27,7 @@ register_numerical_fields(PQ, :pl, :ql, :ip, :iq, :yp, :yq)
 const PQ_VARS = [
     ModelVar(
         :theta,
-        Algeb(),
+        Algeb(), 
         Bus,
         :theta,
         description="Active power injection",

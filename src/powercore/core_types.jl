@@ -3,7 +3,7 @@ abstract type AbstractModel end
 ### ============================= ###
 abstract type VarOwnership end
 struct OwnVar <: VarOwnership end
-struct ForeignVar{Ti<:Integer, T<:AbstractVector{Ti}} <: VarOwnership
+struct ForeignVar{Ti<:Integer,T<:AbstractVector{Ti}} <: VarOwnership
     model_name::Symbol
     var_name::Symbol
     indexer::T
@@ -26,7 +26,7 @@ struct Bounds <: VarProperty
 end
 
 # Type-safe property collection
-const PropertyDict = Dict{Type{<:VarProperty}, VarProperty}
+const PropertyDict = Dict{Type{<:VarProperty},VarProperty}
 
 abstract type VarTrait end
 struct Internal <: VarTrait end
@@ -36,6 +36,8 @@ abstract type VarType end
 struct Algeb <: VarType end
 struct State <: VarType end
 struct Observed <: VarType end
+struct AlgebEq <: VarType end
+struct StateEq <: VarType end
 
 """
     ModelVar{T<:VarTrait, VT, SM, Props} represents a variable in a power system model
@@ -46,25 +48,42 @@ Type parameters:
 - SM: Source model type or Nothing
 - Props: Type of properties dictionary
 """
-struct ModelVar{T<:VarTrait, VT<:Union{VarType, Nothing}, SM<:Union{Type, Nothing}, Props<:PropertyDict}
+struct ModelVar{T<:VarTrait,VT<:Union{VarType,Nothing},SM<:Union{Type,Nothing},Props<:PropertyDict}
     name::Symbol
     var_type::VT
     source_model::SM
-    source_var::Union{Symbol, Nothing}
+    source_var::Union{Symbol,Nothing}
     properties::Props
 end
 
-
 abstract type ResidualType end
+struct SharedResidual <: ResidualType end
 struct PartialResidual <: ResidualType end
 struct FullResidual <: ResidualType end
+
+struct ModelResidual{
+    T<:VarTrait,
+    RT<:ResidualType,
+    SM<:Union{Type,Nothing},
+    SR<:Union{Symbol,Nothing},
+    IN<:Union{Symbol,Nothing}
+}
+    name::Symbol
+    residual_type::RT
+    source_model::SM
+    source_residual::SR
+    indexer::IN
+    description::String
+end
 
 export VarType, Algeb, State, Observed
 export VarTrait, Internal, External
 export VarOwnership, OwnVar, ForeignVar
-export ResidualType, PartialResidual, FullResidual
 export VarProperty, Description, Units, Bounds, PropertyDict
 export ModelVar
+
+export ResidualType, PartialResidual, FullResidual, SharedResidual
+export ModelResidual
 ### ============================= ###
 
 ### ========== Address Manager ========== ###
@@ -81,7 +100,7 @@ Tracks allocation status for a specific model type
 """
 struct ModelAllocation
     model_name::Symbol
-    var_allocations::Dict{Symbol, Vector{UInt}}  # var_name => range
+    var_allocations::Dict{Symbol,Vector{UInt}}  # var_name => range
     is_complete::Bool  # true if all required variables are allocated
 end
 
@@ -89,11 +108,11 @@ end
 Enhanced address manager with explicit allocation tracking
 """
 Base.@kwdef struct AddressManager
-    addresses::Dict{Tuple{VarType, Symbol, Symbol}, Vector{UInt}} = Dict()
-    next_idx::Dict{VarType, Int} = Dict()
+    addresses::Dict{Tuple{VarType,Symbol,Symbol},Vector{UInt}} = Dict()
+    next_idx::Dict{VarType,Int} = Dict()
 
     # Allocation tracking
-    allocations::Dict{Symbol, ModelAllocation} = Dict()
+    allocations::Dict{Symbol,ModelAllocation} = Dict()
 end
 
 """
@@ -121,6 +140,7 @@ Base.@kwdef struct ModelMetadata
     name::Symbol
     vars::Vector{ModelVar}
     output_vars::Vector{Symbol}
+    residuals::Vector{ModelResidual}
     layout::LayoutStrategy = ContiguousVariables()
 end
 
@@ -148,7 +168,7 @@ mutable struct SystemModel{T<:NamedTuple}
     # Inner constructor to validate component types
     function SystemModel(am::AddressManager, components::NamedTuple)
         # Ensure all elements are vectors of AbstractModel subtypes
-        all(V -> V <: AbstractModel, typeof.(values(components))) || 
+        all(V -> V <: AbstractModel, typeof.(values(components))) ||
             error("All components must be vectors of AbstractModel subtypes")
         new{typeof(components)}(am, components)
     end

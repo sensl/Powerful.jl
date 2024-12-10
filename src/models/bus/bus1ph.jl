@@ -22,14 +22,19 @@ end
 
 register_numerical_fields(Bus, :basekv, :vm, :va, :nvhi, :nvlo, :evhi, :evlo)
 
+# Define Bus model variables
 const BUS1PH_VARS = [
-    ModelVar(:theta, Algeb(),
+    ModelVar(
+        :theta, 
+        Algeb(),
         description="Bus voltage angle",
         units="rad",
         bounds=(-Inf, Inf)
     ),
 
-    ModelVar(:v, Algeb(),
+    ModelVar(
+        :v, 
+        Algeb(),
         description="Bus voltage magnitude",
         units="pu",
         bounds=(0.0, 2.0)
@@ -37,6 +42,20 @@ const BUS1PH_VARS = [
 ]
 
 const BUS1PH_OUTPUT_VARS = [:theta, :v]
+
+# Define residual variables similar to model variables
+const BUS1PH_RESIDUALS = [
+    ModelResidual(
+        :p_balance,
+        SharedResidual();
+        description="Active power balance equation",
+    ),
+    ModelResidual(
+        :q_balance, 
+        SharedResidual();
+        description="Reactive power balance equation",
+    )
+]
 
 """
 Get metadata for a model type Bus
@@ -46,6 +65,7 @@ function model_metadata(::Type{Bus}; layout::LayoutStrategy=ContiguousVariables(
         name = :Bus,
         vars = BUS1PH_VARS,
         output_vars = BUS1PH_OUTPUT_VARS,
+        residuals = BUS1PH_RESIDUALS,
         layout = layout
     )
 end

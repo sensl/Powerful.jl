@@ -55,6 +55,46 @@ function ModelVar(
     )
 end
 
+
+"""
+Constructor for internal residual equations
+"""
+function ModelResidual(
+    name::Symbol,
+    residual_type::RT;
+    description::String = ""
+) where {RT<:ResidualType}
+    ModelResidual{Internal, RT, Nothing, Nothing, Nothing}(
+        name,
+        residual_type,
+        nothing,
+        nothing,
+        nothing,
+        description
+    )
+end
+
+"""
+Constructor for external residual equations
+"""
+function ModelResidual(
+    name::Symbol,
+    residual_type::RT,
+    source_model::SM,
+    source_residual::SR;
+    indexer::IN,
+    description::String = ""
+) where {SM<:Type{<:AbstractModel}, RT<:ResidualType, SR, IN}
+    ModelResidual{External, RT, SM, SR, IN}(
+        name,
+        residual_type,
+        source_model,
+        source_residual,
+        indexer,
+        description
+    )
+end
+
 # === Helper Functions === #
 is_internal(::ModelVar{Internal, VT, SM, P}) where {VT, SM, P} = true
 is_internal(::ModelVar{External, VT, SM, P}) where {VT, SM, P} = false
