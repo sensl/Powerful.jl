@@ -26,7 +26,7 @@ register_numerical_fields(Bus, :basekv, :vm, :va, :nvhi, :nvlo, :evhi, :evlo)
 const BUS1PH_VARS = [
     ModelVar(
         :theta, 
-        Algeb(),
+        AlgebVar(),
         description="Bus voltage angle",
         units="rad",
         bounds=(-Inf, Inf)
@@ -34,7 +34,7 @@ const BUS1PH_VARS = [
 
     ModelVar(
         :v, 
-        Algeb(),
+        AlgebVar(),
         description="Bus voltage magnitude",
         units="pu",
         bounds=(0.0, 2.0)
@@ -47,12 +47,14 @@ const BUS1PH_OUTPUT_VARS = [:theta, :v]
 const BUS1PH_RESIDUALS = [
     ModelResidual(
         :p_balance,
-        SharedResidual();
+        AlgebRes(),
+        SharedRes();
         description="Active power balance equation",
     ),
     ModelResidual(
         :q_balance, 
-        SharedResidual();
+        AlgebRes(),
+        SharedRes();
         description="Reactive power balance equation",
     )
 ]

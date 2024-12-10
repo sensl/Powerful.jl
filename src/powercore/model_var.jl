@@ -1,6 +1,6 @@
 
 """
-    ModelVar(name::Symbol, var_type::VarType; kwargs...)
+    ModelVar(name::Symbol, var_type::AddressableType; kwargs...)
 
 Constructor for internal variables
 """
@@ -10,7 +10,7 @@ function ModelVar(
     description::String = "",
     units::String = "",
     bounds::Union{Nothing, Tuple{Float64, Float64}} = nothing
-) where {VT<:VarType}
+) where {VT<:AddressableType}
     props = PropertyDict()
     
     # Add properties if provided
@@ -39,7 +39,7 @@ function ModelVar(
     source_var::Symbol;
     description::String = "",
     units::String = ""
-) where {T<:Type{<:AbstractModel}, VT<:VarType}
+) where {T<:Type{<:AbstractModel}, VT<:AddressableType}
     props = PropertyDict()
     
     # Add properties if provided
@@ -61,12 +61,14 @@ Constructor for internal residual equations
 """
 function ModelResidual(
     name::Symbol,
-    residual_type::RT;
+    eq_type::ET,
+    access::RA;
     description::String = ""
-) where {RT<:ResidualType}
-    ModelResidual{Internal, RT, Nothing, Nothing, Nothing}(
+) where {ET<:AddressableRes, RA<:ResAccess}
+    ModelResidual{ET, RA, Nothing, Nothing, Nothing}(
         name,
-        residual_type,
+        eq_type,
+        access,
         nothing,
         nothing,
         nothing,
@@ -79,15 +81,17 @@ Constructor for external residual equations
 """
 function ModelResidual(
     name::Symbol,
-    residual_type::RT,
+    eq_type::ET,
+    access::RA,
     source_model::SM,
     source_residual::SR;
-    indexer::IN,
+    indexer::IN = nothing,
     description::String = ""
-) where {SM<:Type{<:AbstractModel}, RT<:ResidualType, SR, IN}
-    ModelResidual{External, RT, SM, SR, IN}(
+) where {ET<:AddressableRes, RA<:ResAccess, SM, SR, IN}
+    ModelResidual{ET, RA, SM, SR, IN}(
         name,
-        residual_type,
+        eq_type,
+        access,
         source_model,
         source_residual,
         indexer,

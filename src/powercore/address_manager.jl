@@ -150,7 +150,7 @@ function _alloc_contiguous_instances!(
     vars_per_instance = length(metadata.vars)
     
     # Initialize start indices for each variable type
-    type_start_indices = Dict{VarType,Int}()
+    type_start_indices = Dict{AddressableType,Int}()
     for req in metadata.vars
         type_start_indices[req.var_type] = get!(am.next_idx, req.var_type, 1)
     end

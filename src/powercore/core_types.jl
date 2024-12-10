@@ -32,12 +32,15 @@ abstract type VarTrait end
 struct Internal <: VarTrait end
 struct External <: VarTrait end
 
-abstract type VarType end
-struct Algeb <: VarType end
-struct State <: VarType end
-struct Observed <: VarType end
-struct AlgebEq <: VarType end
-struct StateEq <: VarType end
+abstract type AddressableType end
+abstract type AddressableVar <: AddressableType end
+abstract type AddressableRes <: AddressableType end
+
+struct AlgebVar <: AddressableVar end
+struct StateVar <: AddressableVar end
+struct ObservedVar <: AddressableVar end
+struct AlgebRes <: AddressableRes end
+struct StateRes <: AddressableRes end
 
 """
     ModelVar{T<:VarTrait, VT, SM, Props} represents a variable in a power system model
@@ -48,7 +51,7 @@ Type parameters:
 - SM: Source model type or Nothing
 - Props: Type of properties dictionary
 """
-struct ModelVar{T<:VarTrait,VT<:Union{VarType,Nothing},SM<:Union{Type,Nothing},Props<:PropertyDict}
+struct ModelVar{T<:VarTrait,VT<:Union{AddressableVar,Nothing},SM<:Union{Type,Nothing},Props<:PropertyDict}
     name::Symbol
     var_type::VT
     source_model::SM
@@ -56,33 +59,34 @@ struct ModelVar{T<:VarTrait,VT<:Union{VarType,Nothing},SM<:Union{Type,Nothing},P
     properties::Props
 end
 
-abstract type ResidualType end
-struct SharedResidual <: ResidualType end
-struct PartialResidual <: ResidualType end
-struct FullResidual <: ResidualType end
+abstract type ResAccess end
+struct SharedRes <: ResAccess end
+struct PrivateRes <: ResAccess end
 
 struct ModelResidual{
-    T<:VarTrait,
-    RT<:ResidualType,
+    ET<:AddressableRes,
+    RA<:ResAccess,
     SM<:Union{Type,Nothing},
     SR<:Union{Symbol,Nothing},
     IN<:Union{Symbol,Nothing}
 }
     name::Symbol
-    residual_type::RT
+    eq_type::ET
+    access::RA
     source_model::SM
     source_residual::SR
     indexer::IN
     description::String
 end
 
-export VarType, Algeb, State, Observed
+export AddressableType, AlgebVar, StateVar, ObservedVar
+export AddressableRes, AlgebRes, StateRes
 export VarTrait, Internal, External
 export VarOwnership, OwnVar, ForeignVar
 export VarProperty, Description, Units, Bounds, PropertyDict
 export ModelVar
 
-export ResidualType, PartialResidual, FullResidual, SharedResidual
+export ResTrait, PartialRes, FullRes, SharedRes
 export ModelResidual
 ### ============================= ###
 
@@ -108,8 +112,8 @@ end
 Enhanced address manager with explicit allocation tracking
 """
 Base.@kwdef struct AddressManager
-    addresses::Dict{Tuple{VarType,Symbol,Symbol},Vector{UInt}} = Dict()
-    next_idx::Dict{VarType,Int} = Dict()
+    addresses::Dict{Tuple{AddressableType,Symbol,Symbol},Vector{UInt}} = Dict()
+    next_idx::Dict{AddressableType,Int} = Dict()
 
     # Allocation tracking
     allocations::Dict{Symbol,ModelAllocation} = Dict()
