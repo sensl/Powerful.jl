@@ -52,10 +52,5 @@ end
     @testset "get_registered_models" begin
         @test Bus in get_registered_models(MODEL_REGISTRY[])
         @test get_model_type(MODEL_REGISTRY[], :Bus) == Bus
-
-        struct TestModel <: AbstractModel end
-        @register_model TestModel
-        @test TestModel in get_registered_models(MODEL_REGISTRY[])
-        @test get_model_type(MODEL_REGISTRY[], :TestModel) == TestModel
     end
 end

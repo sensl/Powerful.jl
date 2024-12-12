@@ -1,19 +1,60 @@
 export allocate_model!
 export make_addr_struct, make_addr_inst
+export retrieve_addresses
+export get_key, get_key_name
 
+function get_key(model_vec::AbstractModel)
+    # Get parent model type by removing "Vec" suffix
+    type_name = string(Base.typename(typeof(model_vec)).name)
+    model_type = Symbol(type_name[1:end-3])
+
+    model = getproperty(parentmodule(typeof(model_vec)), model_type)
+
+    key_name = get_key_name(model)
+    _get_indexer_values(model_vec, key_name)
+end
+
+function _get_indexer_values(model_vec::T, key_name) where T <: AbstractModel
+    if key_name isa Symbol
+        return getproperty(model_vec, key_name)
+
+    elseif key_name isa Vector{Symbol}
+        values = [getproperty(model_vec, ii) for ii in key_name]
+        return [Tuple(row) for row in zip(values...)]
+    else
+        error("Invalid key name for model type $model_vec: $key_name")
+    end
+end
+
+function get_key_name(::Type{M}) where M
+    throw(ArgumentError("No unique index name defined for model type $M"))
+end
+
+const ADDRESSABLE_TYPES = [AlgebVar, AlgebRes, StateVar, StateRes, ObservedVar]
 
 # Constructor with default empty dictionaries
 function ModelAllocation(model_name::Symbol)
-    addressable_types = [AlgebVar, AlgebRes, StateVar, StateRes, ObservedVar]
 
     by_type = Dict{AddressableType, Dict{Symbol,Vector{UInt}}}()
 
     # Initialize empty dictionaries for each addressable type
-    for type in addressable_types
+    for type in ADDRESSABLE_TYPES
         by_type[type()] = Dict{Symbol,Vector{UInt}}()
     end
 
     ModelAllocation(model_name, by_type, false)
+end
+
+
+"""
+Constructor for ModelRetrievedAddresses
+"""
+function ModelRetrievedAddresses(model_name::Symbol)
+    by_type = Dict{AddressableType, Dict{Symbol,Vector{UInt}}}()
+    for type in ADDRESSABLE_TYPES
+        by_type[type()] = Dict{Symbol,Vector{UInt}}()
+    end
+    ModelRetrievedAddresses(model_name, by_type)
 end
 
 
@@ -210,13 +251,54 @@ Check if specific variable is allocated
 """
 function is_var_allocated(am::AddressManager, model_name::Symbol, var::Symbol)
     if haskey(am.allocations, model_name)
-        for (addr_type, vars) in am.allocations[model_name].by_type
+        for (_, vars) in am.allocations[model_name].by_type
             if haskey(vars, var)
                 return true
             end
         end
     end
     return false
+end
+
+"""
+Retrieve addresses for external variables and equations for a model
+"""
+function retrieve_addresses(
+    am::AddressManager,
+    metadata::ModelMetadata,
+    models::NamedTuple
+)
+
+    model_name = metadata.name
+
+    retrieved = ModelRetrievedAddresses(model_name)
+
+    for var::ModelVar in metadata.vars
+        if is_external(var)
+            (; name, address_type,source_model, source_var, indexer) = var
+
+            # get the value of the indexer from the current model
+            model_vec = models[model_name]
+            local_keys = _get_indexer_values(model_vec, indexer)
+
+            # get all the keys from the source model
+            src_keys = get_key(models[source_model])
+
+            # get the 1-based index of the source model key in the source model
+            src_indices = findall(x->x in local_keys, src_keys)
+
+            # find the allocation of the source variable
+            src_addrs = am.addresses[(address_type, source_model, source_var)]
+
+            # retrieve address
+            retrieved.by_type[address_type][name] = src_addrs[src_indices]
+
+        end
+    end
+
+    am.retrieved[model_name] = retrieved
+
+    nothing
 end
 
 
@@ -255,4 +337,105 @@ end
     allocate_model!(am, :Bus, bus_metadata, 5)
     @test_throws ArgumentError allocate_model!(am, :Bus, bus_metadata, 3)
     
+end
+
+@testitem "Helper functions in AddressManager" begin
+    using Powerful
+    using Powerful.Models
+    using Powerful.PowerCore
+    using PowerFlowData
+    using Powerful.PowerCore: _get_indexer_values
+
+    # Load test case
+    case = PowerFlowData.parse_network(
+        joinpath(pkgdir(Powerful), "cases", "ieee14.raw")
+    )
+
+    am = AddressManager();
+    ALL_MODELS = MODEL_REGISTRY[].models
+    
+    models = load_system(case, ALL_MODELS);
+
+    sys = SystemModel(am, models)
+
+    # Test get_key for different model types
+    # Bus should have 14 buses
+    bus_keys = get_key(sys.models[:Bus])
+    @test length(bus_keys) == 14
+    @test bus_keys[1] == 1  # IEEE14 starts with bus 1
+
+    # PQ loads
+    pq_keys = get_key(sys.models[:PQ])
+    @test !isempty(pq_keys)
+    @test (2, "1") in pq_keys
+
+    bus_indices_pq = _get_indexer_values(sys.models[:PQ], :i)
+    @test all(x -> x in bus_keys, bus_indices_pq)
+
+    # Test error cases
+    @test_throws ArgumentError get_key_name(Any)  # Invalid model type
+    @test_throws ErrorException _get_indexer_values(sys.models[:Bus], :nonexistent_field)
+end
+
+
+@testitem "Address retrieval for PQ model" begin
+    using Powerful
+    using Powerful.Models
+    using Powerful.PowerCore
+    using PowerFlowData
+    using Powerful.PowerCore: AlgebVar, StateVar, StateRes, AlgebRes, ObservedVar
+
+    # Load test case
+    case = PowerFlowData.parse_network(
+        joinpath(pkgdir(Powerful), "cases", "ieee14.raw")
+    )
+
+    am = AddressManager()
+    ALL_MODELS = MODEL_REGISTRY[].models
+    
+    models = load_system(case, ALL_MODELS)
+    sys = SystemModel(am, models)
+
+    @show ALL_MODELS
+    for m in ALL_MODELS
+        sym = Base.typename(m).name
+        allocate_model!(
+            am,
+            sym, 
+            model_metadata(m), 
+            length(sys.models[sym]),
+        )
+    end
+
+    retrieve_addresses(
+        sys.address_manager,
+        model_metadata(PQ),
+        sys.models
+    )
+
+    # Test retrieved addresses structure
+    @test haskey(am.retrieved, :PQ)
+    
+    # Check all addressable types exist
+    retrieved_pq = am.retrieved[:PQ].by_type
+    @test all(haskey(retrieved_pq, type()) for type in 
+        [AlgebVar, StateVar, StateRes, AlgebRes, ObservedVar])
+
+    # PQ should have retrieved bus voltage addresses
+    alg_vars = retrieved_pq[AlgebVar()]
+    @test haskey(alg_vars, :v)
+    @test !isempty(alg_vars[:v])
+    
+    # The number of retrieved voltage addresses should match number of PQ loads
+    pq_count = length(get_key(models[:PQ]))
+    @test length(alg_vars[:v]) == pq_count
+
+    # Addresses should be valid (non-zero) UInt values
+    @test all(addr > 0 for addr in alg_vars[:v])
+    
+    # Other types should be empty as PQ only retrieves voltage
+    @test isempty(retrieved_pq[StateVar()])
+    @test isempty(retrieved_pq[StateRes()])
+    @test isempty(retrieved_pq[AlgebRes()])
+    @test isempty(retrieved_pq[ObservedVar()])
 end

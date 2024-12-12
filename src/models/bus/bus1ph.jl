@@ -21,6 +21,7 @@ end
 @register_model Bus
 
 register_numerical_fields(Bus, :basekv, :vm, :va, :nvhi, :nvlo, :evhi, :evlo)
+get_key_name(::Type{Bus}) = :i
 
 # Define Bus model variables
 const BUS1PH_VARS = [

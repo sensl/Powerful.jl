@@ -43,24 +43,27 @@ struct AlgebRes <: AddressableRes end
 struct StateRes <: AddressableRes end
 
 """
-    ModelVar{T<:VarTrait, VT, SM, Props} represents a variable in a power system model
+    ModelVar{T<:VarTrait, AT, SM, IN, Props} represents a variable in a power system model
 
 Type parameters:
 - T: Variable trait (Internal/External)
-- VT: Variable type (e.g., Algeb, State) or Nothing
+- AT: Addressable type (e.g., Algeb, State)
 - SM: Source model type or Nothing
+- IN: Indexer type or Nothing
 - Props: Type of properties dictionary
 """
 struct ModelVar{
     T<:VarTrait,
     AT<:AddressableVar,
     SM<:Union{Symbol,Nothing},
+    IN<:Union{Symbol,Nothing},
     Props<:PropertyDict
 }
     name::Symbol
     address_type::AT
     source_model::SM
     source_var::Union{Symbol,Nothing}
+    indexer::IN
     properties::Props
 end
 
@@ -117,6 +120,14 @@ mutable struct ModelAllocation
 end
 
 """
+Track retrieved addresses for a specific model instance
+"""
+struct ModelRetrievedAddresses
+    model_name::Symbol
+    by_type::Dict{AddressableType,Dict{Symbol,Vector{UInt}}}
+end
+
+"""
 Enhanced address manager with explicit allocation tracking
 """
 Base.@kwdef struct AddressManager
@@ -125,6 +136,7 @@ Base.@kwdef struct AddressManager
 
     # Allocation tracking
     allocations::Dict{Symbol,ModelAllocation} = Dict()
+    retrieved::Dict{Symbol,ModelRetrievedAddresses} = Dict()
 end
 
 """

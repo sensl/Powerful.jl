@@ -18,9 +18,10 @@ function ModelVar(
     !isempty(units) && (props[Units] = Units(units))
     !isnothing(bounds) && (props[Bounds] = Bounds(bounds[1], bounds[2]))
     
-    ModelVar{Internal, VT, Nothing, PropertyDict}(
+    ModelVar{Internal, VT, Nothing, Nothing, PropertyDict}(
         name,
         var_type,
+        nothing,
         nothing,
         nothing,
         props
@@ -36,7 +37,8 @@ function ModelVar(
     name::Symbol,
     var_type::VT,
     source_model::Symbol,
-    source_var::Symbol;
+    source_var::Symbol,
+    indexer::Symbol;
     description::String = "",
     units::String = ""
 ) where {VT<:AddressableType}
@@ -46,15 +48,15 @@ function ModelVar(
     !isempty(description) && (props[Description] = Description(description))
     !isempty(units) && (props[Units] = Units(units))
     
-    ModelVar{External, VT, Symbol, PropertyDict}(
+    ModelVar{External, VT, Symbol, Symbol, PropertyDict}(
         name,
         var_type,
         source_model,
         source_var,
+        indexer,
         props
     )
 end
-
 
 """
 Constructor for internal residual equations
@@ -100,10 +102,11 @@ function ModelResidual(
 end
 
 # === Helper Functions === #
-is_internal(::ModelVar{Internal, VT, SM, P}) where {VT, SM, P} = true
-is_internal(::ModelVar{External, VT, SM, P}) where {VT, SM, P} = false
+is_internal(::ModelVar{Internal, AT, SM, IN, P}) where {AT, SM, IN, P} = true
+is_internal(::ModelVar{External, AT, SM, IN, P}) where {AT, SM, IN, P} = false
 
 is_external(v::ModelVar) = !is_internal(v)
+
 is_internal(::ModelResidual{Internal, ET, RA, SM, SR, IN}) where {ET, RA, SM, SR, IN} = true
 is_internal(::ModelResidual{External, ET, RA, SM, SR, IN}) where {ET, RA, SM, SR, IN} = false
 

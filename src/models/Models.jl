@@ -7,11 +7,14 @@ using StructArrays
 using PrecompileTools
 
 using Powerful.PowerCore
+import Powerful.PowerCore: get_key_name
 
 include("soa_interface.jl")
 include("model_traits.jl")
 include("model_registry.jl")
 include("model_variants.jl")
+include("model_access.jl")
+
 
 include("bus/bus.jl")
 include("pq.jl")

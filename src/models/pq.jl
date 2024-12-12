@@ -24,12 +24,15 @@ end
 
 register_numerical_fields(PQ, :pl, :ql, :ip, :iq, :yp, :yq)
 
+get_key_name(::Type{T}) where T<:PQ = [:i, :id]
+
 const PQ_VARS = [
     ModelVar(
         :theta,
         AlgebVar(), 
         :Bus,
         :theta,
+        :i;
         description="Active power injection",
         units="pu",
     ),
@@ -38,6 +41,7 @@ const PQ_VARS = [
         AlgebVar(),
         :Bus,
         :v,
+        :i;
         description="Voltage magnitude", 
         units="pu",
     ),
