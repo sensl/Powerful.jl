@@ -29,7 +29,7 @@ function ModelVar(
 end
 
 """
-    ModelVar(name::Symbol, source_model::Type, source_var::Symbol; kwargs...)
+    ModelVar(name::Symbol, source_model::Type, source_name::Symbol; kwargs...)
 
 Constructor for external variables
 """
@@ -37,7 +37,7 @@ function ModelVar(
     name::Symbol,
     var_type::VT,
     source_model::Symbol,
-    source_var::Symbol,
+    source_name::Symbol,
     indexer::Symbol;
     description::String = "",
     units::String = ""
@@ -52,7 +52,7 @@ function ModelVar(
         name,
         var_type,
         source_model,
-        source_var,
+        source_name,
         indexer,
         props
     )
@@ -86,7 +86,7 @@ function ModelResidual(
     eq_type::ET,
     access::RA,
     source_model::SM,
-    source_residual::SR,
+    source_name::SR,
     indexer::IN = nothing;
     description::String = ""
 ) where {ET<:AddressableRes, RA<:ResAccess, SM, SR, IN}
@@ -95,7 +95,7 @@ function ModelResidual(
         eq_type,
         access,
         source_model,
-        source_residual,
+        source_name,
         indexer,
         description
     )
@@ -109,6 +109,8 @@ is_external(v::ModelVar) = !is_internal(v)
 
 is_internal(::ModelResidual{Internal, ET, RA, SM, SR, IN}) where {ET, RA, SM, SR, IN} = true
 is_internal(::ModelResidual{External, ET, RA, SM, SR, IN}) where {ET, RA, SM, SR, IN} = false
+
+is_external(r::ModelResidual) = !is_internal(r)
 
 # Property access helpers
 function get_property(var::ModelVar, ::Type{T}) where {T<:VarProperty}

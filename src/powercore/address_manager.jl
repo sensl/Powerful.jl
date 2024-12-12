@@ -3,6 +3,23 @@ export make_addr_struct, make_addr_inst
 export retrieve_addresses
 export get_key, get_key_name
 
+const ADDRESSABLE_TYPES = [AlgebVar, AlgebRes, StateVar, StateRes, ObservedVar]
+
+"""
+$(SIGNATURES)
+
+Get the values of the "key" field for all elements of a model.
+
+A "key" is a unique identifier for each element of a model. For example, `i`,
+the bus index, is the key for buses.
+
+This function is used to retrieve the values of the key field for all elements.
+
+For models that use a combination of fields as the key, this function
+returns a vector of tuples, where each tuple contains the values of the
+key fields for each element. For example, a PQ load is identified by the
+bus index and the load index, so the key is `(i, id)` from `i` and `id`.
+"""
 function get_key(model_vec::AbstractModel)
     # Get parent model type by removing "Vec" suffix
     type_name = string(Base.typename(typeof(model_vec)).name)
@@ -30,7 +47,6 @@ function get_key_name(::Type{M}) where M
     throw(ArgumentError("No unique index name defined for model type $M"))
 end
 
-const ADDRESSABLE_TYPES = [AlgebVar, AlgebRes, StateVar, StateRes, ObservedVar]
 
 # Constructor with default empty dictionaries
 function ModelAllocation(model_name::Symbol)
@@ -261,6 +277,26 @@ function is_var_allocated(am::AddressManager, model_name::Symbol, var::Symbol)
 end
 
 """
+Get addresses for external quantities (variables or residuals) based on indexer mapping
+"""
+function _get_external_addresses(
+    models::NamedTuple,
+    model_name::Symbol,
+    source_model::Symbol,
+    indexer::Union{Symbol,Vector{Symbol}},
+    source_addrs::Vector{UInt}
+)
+    # Get local and source keys
+    model_vec = models[model_name]
+    local_keys = _get_indexer_values(model_vec, indexer)
+    src_keys = get_key(models[source_model])
+    
+    # Map local keys to source addresses
+    src_indices = findall(x->x in local_keys, src_keys)
+    return source_addrs[src_indices]
+end
+
+"""
 Retrieve addresses for external variables and equations for a model
 """
 function retrieve_addresses(
@@ -268,36 +304,21 @@ function retrieve_addresses(
     metadata::ModelMetadata,
     models::NamedTuple
 )
-
     model_name = metadata.name
-
     retrieved = ModelRetrievedAddresses(model_name)
 
-    for var::ModelVar in metadata.vars
-        if is_external(var)
-            (; name, address_type,source_model, source_var, indexer) = var
-
-            # get the value of the indexer from the current model
-            model_vec = models[model_name]
-            local_keys = _get_indexer_values(model_vec, indexer)
-
-            # get all the keys from the source model
-            src_keys = get_key(models[source_model])
-
-            # get the 1-based index of the source model key in the source model
-            src_indices = findall(x->x in local_keys, src_keys)
-
-            # find the allocation of the source variable
-            src_addrs = am.addresses[(address_type, source_model, source_var)]
-
-            # retrieve address
-            retrieved.by_type[address_type][name] = src_addrs[src_indices]
-
-        end
+    # Handle both external variables and residuals
+    for external in [filter(is_external, metadata.vars); 
+                    filter(is_external, metadata.residuals)]
+        (; name, address_type, source_model, source_name, indexer) = external
+        src_addrs = am.addresses[(address_type, source_model, source_name)]
+        
+        retrieved.by_type[address_type][name] = _get_external_addresses(
+            models, model_name, source_model, indexer, src_addrs
+        )
     end
 
     am.retrieved[model_name] = retrieved
-
     nothing
 end
 
@@ -436,6 +457,17 @@ end
     # Other types should be empty as PQ only retrieves voltage
     @test isempty(retrieved_pq[StateVar()])
     @test isempty(retrieved_pq[StateRes()])
-    @test isempty(retrieved_pq[AlgebRes()])
+    
+    # Check that algebraic residuals contain p and q
+    alg_res = retrieved_pq[AlgebRes()]
+    @test haskey(alg_res, :p)
+    @test haskey(alg_res, :q)
+
+    # Check that p residual addresses match theta addresses
+    @test all(alg_res[:p] .== alg_vars[:theta])
+
+    # Check that q residual addresses match v addresses 
+    @test all(alg_res[:q] .== alg_vars[:v])
+
     @test isempty(retrieved_pq[ObservedVar()])
 end

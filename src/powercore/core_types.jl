@@ -62,7 +62,7 @@ struct ModelVar{
     name::Symbol
     address_type::AT
     source_model::SM
-    source_var::Union{Symbol,Nothing}
+    source_name::Union{Symbol,Nothing}
     indexer::IN
     properties::Props
 end
@@ -83,7 +83,7 @@ struct ModelResidual{
     address_type::AT
     access::RA
     source_model::SM
-    source_residual::SR
+    source_name::SR
     indexer::IN
     description::String
 end
